@@ -1,0 +1,28 @@
+{
+  "name": "Influera",
+  "short_name": "Influera",
+  "description": "Influera — рабочее пространство для идей, публикаций, целей и платформ.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#071120",
+  "theme_color": "#2e8bff",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/app-icon.png",
+      "sizes": "979x979",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
