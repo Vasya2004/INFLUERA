@@ -4,8 +4,10 @@ import {
 } from "../content-plan-utils";
 import type {
   Checkpoint,
+  CreatorReference,
   Goal,
   Idea,
+  IdeaScriptRow,
   Platform,
   PlatformMetric,
   Profile,
@@ -14,6 +16,7 @@ import type {
 } from "../types";
 import type {
   CheckpointRow,
+  CreatorReferenceRow,
   GoalRow,
   IdeaRow,
   PlatformMetricRow,
@@ -53,6 +56,10 @@ export function mapProfile(row: ProfileRow | null): Profile {
     tone: row.tone ?? "",
     expertise: row.expertise ?? "",
     opportunities: row.opportunities ?? "",
+    avatarUrl: row.avatar_url ?? undefined,
+    avatarStoragePath: row.avatar_storage_path ?? undefined,
+    coverUrl: row.cover_url ?? undefined,
+    coverStoragePath: row.cover_storage_path ?? undefined,
   };
 }
 
@@ -69,6 +76,10 @@ export function mapProfileForDb(userId: string, profile: Profile): ProfileRow {
     tone: profile.tone,
     expertise: profile.expertise,
     opportunities: profile.opportunities,
+    avatar_url: profile.avatarUrl ?? null,
+    avatar_storage_path: profile.avatarStoragePath ?? null,
+    cover_url: profile.coverUrl ?? null,
+    cover_storage_path: profile.coverStoragePath ?? null,
   };
 }
 
@@ -164,8 +175,11 @@ export function mapIdea(row: IdeaRow): Idea {
     id: row.id,
     title: row.title,
     description: row.description ?? "",
+    sourceUrl: row.source_url ?? undefined,
     script: row.script ?? undefined,
     storyboard: row.storyboard ?? undefined,
+    scriptMode: row.script_mode === "post" ? "post" : row.script_mode === "video" ? "video" : undefined,
+    scriptRows: parseIdeaScriptRows(row.script_rows),
     format: row.format as Idea["format"],
     platformId: row.platform_id ?? undefined,
     priority: row.priority as Idea["priority"],
@@ -181,8 +195,11 @@ export function mapIdeaForDb(userId: string, idea: Idea): IdeaRow {
     user_id: userId,
     title: idea.title,
     description: idea.description,
+    source_url: idea.sourceUrl ?? null,
     script: idea.script ?? null,
     storyboard: idea.storyboard ?? null,
+    script_mode: idea.scriptMode ?? null,
+    script_rows: idea.scriptRows ?? [],
     format: idea.format,
     platform_id: idea.platformId ?? null,
     priority: idea.priority,
@@ -190,6 +207,23 @@ export function mapIdeaForDb(userId: string, idea: Idea): IdeaRow {
     created_at: idea.createdAt,
     tags: idea.tags ?? [],
   };
+}
+
+function parseIdeaScriptRows(value: unknown): IdeaScriptRow[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rows = value
+    .map((item): IdeaScriptRow | null => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      return {
+        id: typeof row.id === "string" ? row.id : Math.random().toString(36).slice(2, 9),
+        text: typeof row.text === "string" ? row.text : "",
+        storyboard: typeof row.storyboard === "string" ? row.storyboard : "",
+      };
+    })
+    .filter((row): row is IdeaScriptRow => Boolean(row));
+
+  return rows.length ? rows : undefined;
 }
 
 export function mapPublication(row: PublicationRow, platformId: string): Publication {
@@ -269,6 +303,45 @@ export function mapTemplateForDb(userId: string, template: Template): TemplateRo
     description: template.description,
     usage: template.usage,
     content: template.content,
+  };
+}
+
+export function mapReference(row: CreatorReferenceRow): CreatorReference {
+  return {
+    id: row.id,
+    name: row.name,
+    handle: row.handle ?? "",
+    platform: row.platform ?? "",
+    url: row.url ?? "",
+    type: row.type as CreatorReference["type"],
+    niche: row.niche ?? "",
+    contentFocus: row.content_focus ?? "",
+    whyRelevant: row.why_relevant ?? "",
+    notes: row.notes ?? "",
+    tags: row.tags ?? [],
+    rating: Number(row.rating ?? 3),
+    favorite: Boolean(row.favorite),
+    createdAt: row.created_at,
+  };
+}
+
+export function mapReferenceForDb(userId: string, reference: CreatorReference): CreatorReferenceRow {
+  return {
+    id: reference.id,
+    user_id: userId,
+    name: reference.name,
+    handle: reference.handle || null,
+    platform: reference.platform || null,
+    url: reference.url || null,
+    type: reference.type,
+    niche: reference.niche || null,
+    content_focus: reference.contentFocus || null,
+    why_relevant: reference.whyRelevant || null,
+    notes: reference.notes || null,
+    tags: reference.tags ?? [],
+    rating: reference.rating,
+    favorite: Boolean(reference.favorite),
+    created_at: reference.createdAt,
   };
 }
 

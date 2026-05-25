@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { useStore } from "@/lib/store";
 import { Checkpoint, CheckpointType, ContentFormat, Publication, PublicationStatus } from "@/lib/types";
 import {
@@ -150,11 +151,39 @@ function DateBadge({ date, inverted }: { date: Date; inverted?: boolean }) {
   );
 }
 
+function isPublishedPublication(publication: Publication) {
+  return publication.status === "опубликовано";
+}
+
+function publicationCalendarCardClass(publication: Publication, overdue: boolean) {
+  if (isPublishedPublication(publication)) {
+    return "border-emerald-400/45 bg-emerald-500/15 text-emerald-50 shadow-[0_0_24px_hsl(160_84%_39%/0.14)] hover:border-emerald-300/65 hover:bg-emerald-500/20";
+  }
+
+  return overdue
+    ? "border-destructive/40 bg-destructive/5"
+    : "border-border/70 bg-background";
+}
+
+function publicationListCardClass(publication: Publication) {
+  return isPublishedPublication(publication)
+    ? "border-emerald-400/45 bg-emerald-500/10 shadow-[0_0_30px_hsl(160_84%_39%/0.12)]"
+    : "border-border/80";
+}
+
+function getInitialPlanView(): PlanView {
+  if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+    return "list";
+  }
+  return "month";
+}
+
 export default function ContentPlan() {
   const { state, updatePublication, deletePublication, deleteCheckpoint } = useStore();
+  const [, setLocation] = useLocation();
   const [cursorDate, setCursorDate] = useState(() => startOfDay(new Date()));
   const [filters, setFilters] = useState<ContentPlanFilterState>(DEFAULT_FILTERS);
-  const [view, setView] = useState<PlanView>("month");
+  const [view, setView] = useState<PlanView>(getInitialPlanView);
   const [pubDialogOpen, setPubDialogOpen] = useState(false);
   const [pubDialogDate, setPubDialogDate] = useState<string | undefined>();
   const [checkpointDialogOpen, setCheckpointDialogOpen] = useState(false);
@@ -170,6 +199,17 @@ export default function ContentPlan() {
   const detailPub = detailPubId
     ? state.publications.find(publication => publication.id === detailPubId)
     : undefined;
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const syncMobileView = () => {
+      if (media.matches) setView("list");
+    };
+
+    syncMobileView();
+    media.addEventListener("change", syncMobileView);
+    return () => media.removeEventListener("change", syncMobileView);
+  }, []);
 
   const entries = useMemo<PlanEntry[]>(() => {
     const pubs: PlanEntry[] = state.publications.map(publication => ({ kind: "publication", data: publication }));
@@ -224,6 +264,14 @@ export default function ContentPlan() {
     setPubDialogOpen(true);
   }
 
+  function openPublicationTarget(publication: Publication) {
+    if (publication.ideaId) {
+      setLocation(`/ideas/${publication.ideaId}`);
+      return;
+    }
+    openEditPub(publication);
+  }
+
   function shiftPeriod(direction: -1 | 1) {
     if (view === "month") setCursorDate(current => addMonths(current, direction));
     else if (view === "week") setCursorDate(current => addDays(current, direction * 7));
@@ -274,13 +322,9 @@ export default function ContentPlan() {
       />
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
-        {view === "list" ? (
-          <p className="text-sm text-muted-foreground">
-            Хронологический список публикаций и чекпоинтов
-          </p>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-xl border border-border/80 bg-background/90 p-1 shadow-sm">
+        {view !== "list" && (
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <div className="flex w-full items-center rounded-xl border border-border/80 bg-background/90 p-1 shadow-sm sm:w-auto">
               <Button
                 type="button"
                 variant="ghost"
@@ -291,7 +335,7 @@ export default function ContentPlan() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="min-w-[9.5rem] px-3 text-center sm:min-w-[11rem]">
+              <div className="min-w-0 flex-1 px-3 text-center sm:min-w-[11rem]">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {view === "month" ? "Месяц" : "Неделя"}
                 </p>
@@ -322,7 +366,7 @@ export default function ContentPlan() {
             )}
           </div>
         )}
-        <div className="flex rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm">
+        <div className="grid w-full grid-cols-3 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm sm:flex sm:w-auto">
           {VIEW_OPTIONS.map(option => {
             const Icon = option.icon;
             return (
@@ -331,12 +375,12 @@ export default function ContentPlan() {
                 type="button"
                 onClick={() => setView(option.value)}
                 className={cn(
-                  "inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all",
+                  "inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-semibold transition-all sm:px-3.5",
                   view === option.value ? "bg-background text-foreground shadow-sm ring-1 ring-border/70" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className="h-3.5 w-3.5" />
-                {option.label}
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="min-w-0 truncate">{option.label}</span>
               </button>
             );
           })}
@@ -543,14 +587,17 @@ export default function ContentPlan() {
                           <button
                             key={pub.id}
                             type="button"
-                            onClick={() => setDetailPubId(pub.id)}
+                            onClick={() => openPublicationTarget(pub)}
                             className={cn(
                               "w-full rounded-lg border px-2 py-1.5 text-left text-[11px] shadow-sm transition-all hover:border-primary/35 hover:bg-primary/5",
-                              overdue ? "border-destructive/40 bg-destructive/5" : "border-border/70 bg-background",
+                              publicationCalendarCardClass(pub, overdue),
                             )}
                           >
                             <span className="block truncate font-medium">{pub.title}</span>
-                            <span className="mt-0.5 block truncate text-muted-foreground">
+                            <span className={cn(
+                              "mt-0.5 block truncate",
+                              isPublishedPublication(pub) ? "text-emerald-100/80" : "text-muted-foreground",
+                            )}>
                               {platform?.name ?? "—"} · {STATUS_LABELS[pub.status]}
                             </span>
                           </button>
@@ -587,7 +634,19 @@ export default function ContentPlan() {
               const checkpoint = entry.data;
               return (
                 <motion.div key={checkpoint.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.03 }}>
-                  <Card className="border-primary/35 bg-primary text-primary-foreground">
+                  <Card
+                    role="button"
+                    tabIndex={0}
+                    className="cursor-pointer border-primary/35 bg-primary text-primary-foreground transition-transform active:scale-[0.99]"
+                    onClick={() => { setEditCheckpoint(checkpoint); setCheckpointDialogOpen(true); }}
+                    onKeyDown={event => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setEditCheckpoint(checkpoint);
+                        setCheckpointDialogOpen(true);
+                      }
+                    }}
+                  >
                     <CardContent className="flex items-center justify-between gap-4 p-4">
                       <div className="flex min-w-0 items-center gap-4">
                         <DateBadge date={entryDate} inverted />
@@ -597,10 +656,27 @@ export default function ContentPlan() {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/15" onClick={() => { setEditCheckpoint(checkpoint); setCheckpointDialogOpen(true); }}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hidden text-primary-foreground hover:bg-primary-foreground/15 sm:inline-flex"
+                          onClick={event => {
+                            event.stopPropagation();
+                            setEditCheckpoint(checkpoint);
+                            setCheckpointDialogOpen(true);
+                          }}
+                        >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/15" onClick={() => setDeleteCheckpointId(checkpoint.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-primary-foreground hover:bg-primary-foreground/15"
+                          onClick={event => {
+                            event.stopPropagation();
+                            setDeleteCheckpointId(checkpoint.id);
+                          }}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -616,20 +692,33 @@ export default function ContentPlan() {
 
             return (
               <motion.div key={publication.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.03 }}>
-                <Card className={cn("group border-border/80 shadow-sm", isPast && publication.status !== "опубликовано" && "opacity-85")}>
+                <Card
+                  role="button"
+                  tabIndex={0}
+                  className={cn("group cursor-pointer shadow-sm transition-transform active:scale-[0.99]", publicationListCardClass(publication), isPast && publication.status !== "опубликовано" && "opacity-85")}
+                  onClick={() => openPublicationTarget(publication)}
+                  onKeyDown={event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openPublicationTarget(publication);
+                    }
+                  }}
+                >
                   <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
-                      <Checkbox
-                        checked={selected}
-                        onCheckedChange={value => togglePublicationSelection(publication.id, value === true)}
-                        aria-label="Выбрать публикацию"
-                      />
+                      <div className="hidden sm:block" onClick={event => event.stopPropagation()}>
+                        <Checkbox
+                          checked={selected}
+                          onCheckedChange={value => togglePublicationSelection(publication.id, value === true)}
+                          aria-label="Выбрать публикацию"
+                        />
+                      </div>
                       <div className="flex min-w-0 items-center gap-4">
                         <DateBadge date={entryDate} />
                         <div className="min-w-0">
-                          <button type="button" className="truncate text-left text-sm font-semibold hover:underline" onClick={() => setDetailPubId(publication.id)}>
+                          <p className="truncate text-left text-sm font-semibold">
                             {publication.title}
-                          </button>
+                          </p>
                           <div className="mt-1.5 flex flex-wrap gap-1.5">
                             {platform && <Badge variant="secondary">{platform.name}</Badge>}
                             <Badge variant="outline">{publication.format}</Badge>
@@ -643,14 +732,36 @@ export default function ContentPlan() {
                         {STATUS_LABELS[publication.status]}
                       </span>
                       {publication.url && (
-                        <a href={publication.url} target="_blank" rel="noreferrer" className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-primary">
+                        <a
+                          href={publication.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-primary"
+                          onClick={event => event.stopPropagation()}
+                        >
                           <ExternalLink className="h-4 w-4" />
                         </a>
                       )}
-                      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => openEditPub(publication)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hidden h-9 w-9 sm:inline-flex"
+                        onClick={event => {
+                          event.stopPropagation();
+                          openEditPub(publication);
+                        }}
+                      >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => setDeletePubId(publication.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-destructive"
+                        onClick={event => {
+                          event.stopPropagation();
+                          setDeletePubId(publication.id);
+                        }}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

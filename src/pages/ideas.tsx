@@ -39,6 +39,7 @@ function IdeaDialog({ open, onClose, idea, platforms }: {
   const [form, setForm] = useState({
     title: "",
     description: "",
+    sourceUrl: "",
     format: "пост" as ContentFormat,
     priority: "средний" as Priority,
     status: "новая" as IdeaStatus,
@@ -52,6 +53,7 @@ function IdeaDialog({ open, onClose, idea, platforms }: {
     setForm({
       title: idea?.title ?? "",
       description: idea?.description ?? "",
+      sourceUrl: idea?.sourceUrl ?? "",
       format: idea?.format ?? "пост",
       priority: idea?.priority ?? "средний",
       status: idea?.status ?? "новая",
@@ -65,6 +67,7 @@ function IdeaDialog({ open, onClose, idea, platforms }: {
     const data = {
       title: form.title,
       description: form.description,
+      sourceUrl: form.sourceUrl.trim() || undefined,
       format: form.format,
       priority: form.priority,
       status: form.status,
@@ -96,6 +99,15 @@ function IdeaDialog({ open, onClose, idea, platforms }: {
             <Label>Хэштеги</Label>
             <Input placeholder="#съёмка, #telegram, #разбор" value={form.tags} onChange={e => set("tags", e.target.value)} />
             <p className="text-xs text-muted-foreground">Через запятую. Используются в поиске и фильтрации.</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Ссылка</Label>
+            <Input
+              type="url"
+              placeholder="https://..."
+              value={form.sourceUrl}
+              onChange={e => set("sourceUrl", e.target.value)}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

@@ -19,6 +19,15 @@ describe("primary goal helpers", () => {
       { ...goals[0], currentValue: 400, targetValue: 2000 },
       { ...goals[1], currentValue: 100, targetValue: 500 },
       goals[2],
+      {
+        id: "g-platform-p2",
+        title: "YouTube до 1 500",
+        type: "подписчики",
+        currentValue: 300,
+        targetValue: 1500,
+        deadline: expect.any(String),
+        platformId: "p2",
+      },
     ]);
   });
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { AppState, Platform, PlatformMetric, Goal, Idea, Publication, Checkpoint, Template, Profile } from "./types";
+import { AppState, Platform, PlatformMetric, Goal, Idea, Publication, Checkpoint, Template, Profile, CreatorReference } from "./types";
 import { useAuth } from "./auth-context";
 import { isSupabaseConfigured } from "./supabase";
 import { loadNormalizedWorkspace, loadWorkspace, saveWorkspace } from "./workspace-api";
@@ -24,6 +24,52 @@ import { metricIdFor, syncPlatformSubscribersFromMetrics } from "./platform-metr
 export { createInitialState, createDemoAppState } from "./demo-seed";
 
 export const STORE_KEY = "influera_data_v2";
+const PROFILE_ASSETS_KEY = "influera_profile_assets_v1";
+
+function readProfileAssets(): Pick<Profile, "avatarUrl" | "avatarStoragePath" | "coverUrl" | "coverStoragePath"> {
+  try {
+    const raw = localStorage.getItem(PROFILE_ASSETS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Pick<Profile, "avatarUrl" | "avatarStoragePath" | "coverUrl" | "coverStoragePath">;
+    return {
+      avatarUrl: typeof parsed.avatarUrl === "string" ? parsed.avatarUrl : undefined,
+      avatarStoragePath: typeof parsed.avatarStoragePath === "string" ? parsed.avatarStoragePath : undefined,
+      coverUrl: typeof parsed.coverUrl === "string" ? parsed.coverUrl : undefined,
+      coverStoragePath: typeof parsed.coverStoragePath === "string" ? parsed.coverStoragePath : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function writeProfileAssets(profile: Profile) {
+  const assets = {
+    avatarUrl: profile.avatarUrl,
+    avatarStoragePath: profile.avatarStoragePath,
+    coverUrl: profile.coverUrl,
+    coverStoragePath: profile.coverStoragePath,
+  };
+  if (Object.values(assets).some(Boolean)) {
+    localStorage.setItem(PROFILE_ASSETS_KEY, JSON.stringify(assets));
+  } else {
+    localStorage.removeItem(PROFILE_ASSETS_KEY);
+  }
+}
+
+function withLocalProfileAssets(state: AppState): AppState {
+  const assets = readProfileAssets();
+  if (!Object.values(assets).some(Boolean)) return state;
+  return {
+    ...state,
+    profile: {
+      ...state.profile,
+      avatarUrl: state.profile.avatarUrl || assets.avatarUrl,
+      avatarStoragePath: state.profile.avatarStoragePath || assets.avatarStoragePath,
+      coverUrl: state.profile.coverUrl || assets.coverUrl,
+      coverStoragePath: state.profile.coverStoragePath || assets.coverStoragePath,
+    },
+  };
+}
 
 export function normalizeState(data: AppState): AppState {
   const withTemplates = {
@@ -43,6 +89,7 @@ export function normalizeState(data: AppState): AppState {
       format: migrateContentFormat(i.format),
     })),
     checkpoints: data.checkpoints ?? [],
+    references: data.references ?? [],
     templates: data.templates.map((template) => ({
       ...template,
       category: migrateTemplateCategory(template.category),
@@ -89,6 +136,9 @@ type StoreContextType = {
   addTemplate: (t: Omit<Template, "id">) => void;
   updateTemplate: (t: Template) => void;
   deleteTemplate: (id: string) => void;
+  addReference: (r: Omit<CreatorReference, "id" | "createdAt">) => void;
+  updateReference: (r: CreatorReference) => void;
+  deleteReference: (id: string) => void;
   updateProfile: (p: Profile) => void;
   exportData: () => void;
   resetData: () => Promise<void>;
@@ -120,7 +170,7 @@ function readLocalState(): AppState | null {
     const saved = localStorage.getItem(STORE_KEY);
     if (!saved) return null;
     const parsed = parseAppState(JSON.parse(saved));
-    return parsed ? normalizeState(parsed) : null;
+    return parsed ? withLocalProfileAssets(normalizeState(parsed)) : null;
   } catch {}
   return null;
 }
@@ -193,7 +243,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
         let nextState: AppState;
         if (remote) {
-          nextState = normalizeState(remote);
+          nextState = withLocalProfileAssets(normalizeState(remote));
         } else {
           const local = readLocalState();
           const normalizedLocal = local ? normalizeState(local) : null;
@@ -474,11 +524,34 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       () => () => cloudSyncRef.current!.removeTemplate(id),
     );
 
-  const updateProfile = (p: Profile) =>
+  const addReference = (r: Omit<CreatorReference, "id" | "createdAt">) => {
+    const reference = { ...r, id: genId(), createdAt: new Date().toISOString() };
     applyUpdate(
-      s => ({ ...s, profile: p }),
-      () => () => cloudSyncRef.current!.saveProfile(p),
+      s => ({ ...s, references: [reference, ...(s.references ?? [])] }),
+      () => () => cloudSyncRef.current!.saveReference(reference),
     );
+  };
+
+  const updateReference = (r: CreatorReference) =>
+    applyUpdate(
+      s => ({ ...s, references: (s.references ?? []).map(x => x.id === r.id ? r : x) }),
+      () => () => cloudSyncRef.current!.saveReference(r),
+    );
+
+  const deleteReference = (id: string) =>
+    applyUpdate(
+      s => ({ ...s, references: (s.references ?? []).filter(x => x.id !== id) }),
+      () => () => cloudSyncRef.current!.removeReference(id),
+    );
+
+  const updateProfile = (p: Profile) =>
+    {
+      writeProfileAssets(p);
+      applyUpdate(
+        s => ({ ...s, profile: p }),
+        () => () => cloudSyncRef.current!.saveProfile(p),
+      );
+    };
 
   const exportData = () => {
     void (async () => {
@@ -615,6 +688,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         addTemplate: () => {},
         updateTemplate: () => {},
         deleteTemplate: () => {},
+        addReference: () => {},
+        updateReference: () => {},
+        deleteReference: () => {},
         updateProfile: () => {},
         exportData: () => {},
         resetData: async () => {},
@@ -640,6 +716,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addPublication, updatePublication, deletePublication,
       addCheckpoint, updateCheckpoint, deleteCheckpoint,
       addTemplate, updateTemplate, deleteTemplate,
+      addReference, updateReference, deleteReference,
       updateProfile,
       exportData,
       resetData,

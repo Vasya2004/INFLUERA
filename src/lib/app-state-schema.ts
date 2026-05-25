@@ -41,6 +41,15 @@ const ideaSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
+  sourceUrl: optionalString,
+  script: optionalString,
+  storyboard: optionalString,
+  scriptMode: z.enum(["video", "post"]).optional(),
+  scriptRows: z.array(z.object({
+    id: z.string(),
+    text: z.string(),
+    storyboard: z.string(),
+  })).optional(),
   format: z.string(),
   platformId: optionalString,
   priority: z.string(),
@@ -97,6 +106,23 @@ const templateSchema = z.object({
   files: z.array(templateFileSchema).optional(),
 });
 
+const referenceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  handle: z.string().optional().default(""),
+  platform: z.string().optional().default(""),
+  url: z.string().optional().default(""),
+  type: z.enum(["блогер", "эксперт", "бренд"]).optional().catch("блогер").default("блогер"),
+  niche: z.string().optional().default(""),
+  contentFocus: z.string().optional().default(""),
+  whyRelevant: z.string().optional().default(""),
+  notes: z.string().optional().default(""),
+  tags: z.array(z.string()).optional().default([]),
+  rating: z.number().optional().default(3),
+  favorite: z.boolean().optional().default(false),
+  createdAt: z.string().optional().default(() => new Date().toISOString()),
+});
+
 const profileSchema = z.object({
   name: z.string(),
   niche: z.string(),
@@ -108,6 +134,10 @@ const profileSchema = z.object({
   tone: z.string(),
   expertise: z.string(),
   opportunities: z.string(),
+  avatarUrl: z.string().optional(),
+  avatarStoragePath: z.string().optional(),
+  coverUrl: z.string().optional(),
+  coverStoragePath: z.string().optional(),
 });
 
 const appStateSchema = z.object({
@@ -118,6 +148,7 @@ const appStateSchema = z.object({
   publications: z.array(publicationSchema),
   checkpoints: z.array(checkpointSchema).optional().default([]),
   templates: z.array(templateSchema),
+  references: z.array(referenceSchema).optional().default([]),
   profile: profileSchema,
 });
 

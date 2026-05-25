@@ -144,7 +144,8 @@ function getPlatformForm(platform?: Platform) {
     username: platform?.username ?? "",
     url: platform?.url ?? "",
     subscribers: platform?.subscribers?.toString() ?? "0",
-    targetSubscribers: platform?.targetSubscribers?.toString() ?? "1000",
+    goalEnabled: Boolean(platform?.targetSubscribers && platform.targetSubscribers > 0),
+    targetSubscribers: platform?.targetSubscribers && platform.targetSubscribers > 0 ? platform.targetSubscribers.toString() : "1000",
     role: (platform?.role ?? "дополнительная") as PlatformRole,
     weeklyPlan: platform?.weeklyPlan?.toString() ?? "3",
     accentColor: platform?.accentColor ?? DEFAULT_ACCENT[platform?.name ?? "Telegram"] ?? DEFAULT_ACCENT["Telegram"],
@@ -367,6 +368,7 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
   }, [open, platform]);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const setBoolean = (k: string, v: boolean) => setForm((f) => ({ ...f, [k]: v }));
   const isMain = isMainPlatform({ role: form.role });
   const mirrorCandidates = getAvailableMirrorCandidates(allPlatforms, platform?.id);
 
@@ -386,7 +388,7 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
       username,
       url: form.url.trim() || `https://${form.name.toLowerCase()}.com/${username.replace("@", "")}`,
       subscribers: Number(form.subscribers) || 0,
-      targetSubscribers: Number(form.targetSubscribers) || 1000,
+      targetSubscribers: form.goalEnabled ? Number(form.targetSubscribers) || 1000 : 0,
       role: form.role,
       weeklyPlan: Number(form.weeklyPlan) || 1,
       accentColor: form.accentColor,
@@ -428,7 +430,7 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
             <div className="space-y-1.5">
               <Label>Роль</Label>
               <div
-                className="rounded-xl border p-2.5 transition-colors"
+                className="rounded-xl border transition-colors"
                 style={isMain ? {
                   background: platformTint(form.accentColor, 10),
                   borderColor: platformBorder(form.accentColor, 38),
@@ -453,11 +455,6 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
                     ))}
                   </SelectContent>
                 </Select>
-                {isMain && (
-                  <p className="mt-2 px-1 text-[11px] leading-relaxed text-muted-foreground">
-                    Основная площадка — сюда публикуется главный контент, на выбранные площадки его можно дублировать.
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -497,16 +494,32 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
             <Input placeholder="https://t.me/myblog" value={form.url} onChange={(e) => set("url", e.target.value)} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn("grid gap-3", form.goalEnabled ? "grid-cols-2" : "grid-cols-1")}>
             <div className="space-y-1.5">
               <Label>Подписчиков сейчас</Label>
               <Input type="number" min="0" value={form.subscribers} onChange={(e) => set("subscribers", e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <Label>Цель по подписчикам</Label>
-              <Input type="number" min="0" value={form.targetSubscribers} onChange={(e) => set("targetSubscribers", e.target.value)} />
-            </div>
+            {form.goalEnabled && (
+              <div className="space-y-1.5">
+                <Label>Цель по подписчикам</Label>
+                <Input type="number" min="1" value={form.targetSubscribers} onChange={(e) => set("targetSubscribers", e.target.value)} />
+              </div>
+            )}
           </div>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/70 bg-muted/20 p-3 transition-colors hover:bg-muted/35">
+            <Checkbox
+              checked={form.goalEnabled}
+              onCheckedChange={checked => setBoolean("goalEnabled", checked === true)}
+              className="mt-0.5"
+            />
+            <span className="space-y-1">
+              <span className="block text-sm font-medium text-foreground">Добавить цель по подписчикам</span>
+              <span className="block text-xs leading-relaxed text-muted-foreground">
+                Если включено, цель появится на странице «Цели» и будет учитываться в общей аудитории.
+              </span>
+            </span>
+          </label>
 
           <div className="space-y-1.5">
             <Label>Публикаций в неделю</Label>
@@ -628,6 +641,7 @@ export function Platforms({ embedded = false }: { embedded?: boolean }) {
       ) : (
         <div className="grid gap-4">
           {state.platforms.map((platform, index) => {
+            const hasGoal = platform.targetSubscribers > 0;
             const progress = platform.targetSubscribers > 0
               ? Math.min((platform.subscribers / platform.targetSubscribers) * 100, 100)
               : 0;
@@ -719,13 +733,23 @@ export function Platforms({ embedded = false }: { embedded?: boolean }) {
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-muted-foreground mb-1">Цель</p>
-                            <p className="text-sm font-medium">{platform.targetSubscribers.toLocaleString("ru-RU")}</p>
+                            <p className="text-sm font-medium">
+                              {hasGoal ? platform.targetSubscribers.toLocaleString("ru-RU") : "Не задана"}
+                            </p>
                           </div>
                         </div>
 
                         {/* Colored progress bar */}
-                        <AccentProgress value={progress} accent={accent} className="h-2" />
-                        <p className="text-xs text-muted-foreground">{Math.round(progress)}% от цели</p>
+                        {hasGoal ? (
+                          <>
+                            <AccentProgress value={progress} accent={accent} className="h-2" />
+                            <p className="text-xs text-muted-foreground">{Math.round(progress)}% от цели</p>
+                          </>
+                        ) : (
+                          <p className="rounded-xl border border-dashed border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                            Цель по подписчикам не добавлена.
+                          </p>
+                        )}
 
                         {main && mirrors.length > 0 && (
                           <div className="rounded-xl border border-border/60 bg-background/50 p-3 dark:border-white/10 dark:bg-white/[0.03]">

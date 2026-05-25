@@ -1,15 +1,17 @@
 import { useSearchParams } from "wouter";
-import { Database, LayoutTemplate, Share2 } from "lucide-react";
+import { Database, LayoutTemplate, Share2, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/app/page";
 import { useStore } from "@/lib/store";
 import { Platforms } from "@/pages/platforms";
 import { Templates } from "@/pages/templates";
+import { References } from "@/pages/references";
 
-type BaseTab = "platforms" | "templates";
+type BaseTab = "platforms" | "templates" | "references";
 
 function getTabFromSearch(searchParams: URLSearchParams): BaseTab {
+  if (searchParams.get("tab") === "references") return "references";
   return searchParams.get("tab") === "templates" ? "templates" : "platforms";
 }
 
@@ -20,14 +22,16 @@ export default function Base() {
 
   const totalSubscribers = state.platforms.reduce((sum, platform) => sum + platform.subscribers, 0);
   function handleTabChange(value: string) {
-    setSearchParams(value === "templates" ? { tab: "templates" } : { tab: "platforms" });
+    if (value === "references") setSearchParams({ tab: "references" });
+    else if (value === "templates") setSearchParams({ tab: "templates" });
+    else setSearchParams({ tab: "platforms" });
   }
 
   return (
     <div className="space-y-6">
       <PageHeader title="База" />
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="border-border/80 shadow-sm">
           <CardContent className="flex items-center gap-3 p-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -61,23 +65,35 @@ export default function Base() {
             </div>
           </CardContent>
         </Card>
+        <Card className="border-border/80 shadow-sm">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-500">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Референсы</p>
+              <p className="text-xl font-semibold">{(state.references ?? []).length}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
-        <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-card/80 p-2 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <TabsList className="h-auto w-full justify-start rounded-xl bg-muted/45 p-1 sm:w-auto">
-            <TabsTrigger value="platforms" className="min-h-10 flex-1 gap-2 rounded-lg px-4 sm:flex-none">
-              <Share2 className="h-4 w-4" />
-              Платформы
+        <div className="rounded-2xl border border-border/80 bg-card/80 p-2 shadow-sm">
+          <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-muted/45 p-1">
+            <TabsTrigger value="platforms" className="min-h-10 min-w-0 gap-1.5 rounded-lg px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
+              <Share2 className="h-4 w-4 shrink-0 text-current" />
+              <span className="min-w-0 truncate">Платформы</span>
             </TabsTrigger>
-            <TabsTrigger value="templates" className="min-h-10 flex-1 gap-2 rounded-lg px-4 sm:flex-none">
-              <LayoutTemplate className="h-4 w-4" />
-              Материалы
+            <TabsTrigger value="templates" className="min-h-10 min-w-0 gap-1.5 rounded-lg px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
+              <LayoutTemplate className="h-4 w-4 shrink-0 text-current" />
+              <span className="min-w-0 truncate">Материалы</span>
+            </TabsTrigger>
+            <TabsTrigger value="references" className="min-h-10 min-w-0 gap-1.5 rounded-lg px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
+              <Users className="h-4 w-4 shrink-0 text-current" />
+              <span className="min-w-0 truncate">Референсы</span>
             </TabsTrigger>
           </TabsList>
-          <p className="px-2 text-xs text-muted-foreground">
-            Рабочая база автора: каналы, аудитория, шаблоны и файлы.
-          </p>
         </div>
 
         <TabsContent value="platforms" className="mt-0">
@@ -85,6 +101,9 @@ export default function Base() {
         </TabsContent>
         <TabsContent value="templates" className="mt-0">
           <Templates embedded />
+        </TabsContent>
+        <TabsContent value="references" className="mt-0">
+          <References embedded />
         </TabsContent>
       </Tabs>
     </div>

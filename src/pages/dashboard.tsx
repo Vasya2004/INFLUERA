@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { ArrowRight, Lightbulb } from "lucide-react";
-import type { IdeaStatus, Priority, Publication } from "@/lib/types";
-import { getPrimaryGoal, goalProgress, goalRemaining } from "@/lib/primary-goal";
+import type { IdeaStatus, Platform, PlatformMetric, Priority, Publication } from "@/lib/types";
+import { getAudienceGoalSummary, goalProgress, goalRemaining } from "@/lib/primary-goal";
 import {
-  buildAggregatedAudienceSeries,
   getPlatformGrowthLeaderboard,
   getWeeklyPlanSummary,
 } from "@/lib/platform-metrics-utils";
@@ -49,6 +48,93 @@ const audiencePeriods: Array<{ value: AudiencePeriod; label: string }> = [
 const glassPanelClass = "glass-card text-foreground";
 const glassPanelNestedClass = "glass-card text-foreground";
 const mutedTextClass = "text-muted-foreground";
+
+function dateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function buildAudienceFallback(labels: string[], audienceCurrent: number, startOffset: number) {
+  const startValue = Math.max(0, audienceCurrent - startOffset);
+  const growth = audienceCurrent - startValue;
+
+  return labels.map((label, index) => {
+    const progress = labels.length > 1 ? index / (labels.length - 1) : 1;
+    const curvedProgress = Math.pow(progress, 1.14);
+
+    return {
+      label,
+      dateKey: label,
+      subscribers: Math.round(startValue + growth * curvedProgress),
+    };
+  });
+}
+
+function totalAudienceAtDate(platforms: Platform[], metricsByPlatform: Map<string, PlatformMetric[]>, date: Date) {
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  return platforms.reduce((sum, platform) => {
+    const metrics = metricsByPlatform.get(platform.id) ?? [];
+    let value = platform.subscribers;
+
+    for (const metric of metrics) {
+      if (new Date(metric.date) <= endOfDay) value = metric.subscribers;
+      else break;
+    }
+
+    return sum + value;
+  }, 0);
+}
+
+function buildAudienceSeries(
+  metrics: PlatformMetric[] | undefined,
+  platforms: Platform[],
+  audienceCurrent: number,
+  period: AudiencePeriod,
+) {
+  if ((metrics ?? []).length === 0 || platforms.length === 0) {
+    return period === "month"
+      ? buildAudienceFallback(["1", "5", "10", "15", "20", "25", "30"], audienceCurrent, 420)
+      : buildAudienceFallback(["июн", "июл", "авг", "сен", "окт", "ноя", "дек", "янв", "фев", "мар", "апр", "май"], audienceCurrent, 2200);
+  }
+
+  const sortedMetrics = [...(metrics ?? [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const metricsByPlatform = new Map<string, PlatformMetric[]>();
+  for (const metric of sortedMetrics) {
+    const current = metricsByPlatform.get(metric.platformId) ?? [];
+    current.push(metric);
+    metricsByPlatform.set(metric.platformId, current);
+  }
+
+  const now = new Date();
+
+  if (period === "month") {
+    const dayOffsets = [29, 24, 19, 14, 9, 4, 0];
+    return dayOffsets.map(offset => {
+      const date = new Date(now);
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() - offset);
+
+      return {
+        label: date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }),
+        dateKey: dateKey(date),
+        subscribers: offset === 0 ? audienceCurrent : totalAudienceAtDate(platforms, metricsByPlatform, date),
+      };
+    });
+  }
+
+  return Array.from({ length: 12 }, (_, index) => {
+    const monthOffset = 11 - index;
+    const date = new Date(now.getFullYear(), now.getMonth() - monthOffset + 1, 0, 12);
+    const isCurrentMonth = monthOffset === 0;
+
+    return {
+      label: date.toLocaleDateString("ru-RU", { month: "short" }),
+      dateKey: dateKey(date),
+      subscribers: isCurrentMonth ? audienceCurrent : totalAudienceAtDate(platforms, metricsByPlatform, date),
+    };
+  });
+}
 
 function UpcomingPublicationsList({
   publications,
@@ -119,39 +205,20 @@ export default function Dashboard() {
   const { state } = useStore();
   const [audiencePeriod, setAudiencePeriod] = useState<AudiencePeriod>("month");
 
-  const primaryGoal = getPrimaryGoal(state.goals);
-  const audienceCurrent = primaryGoal?.currentValue ?? 0;
-  const audienceTarget = primaryGoal?.targetValue ?? 0;
-  const subscriberProgress = primaryGoal ? goalProgress(primaryGoal) : 0;
-  const audienceRemaining = primaryGoal ? goalRemaining(primaryGoal) : 0;
+  const audienceGoal = useMemo(
+    () => getAudienceGoalSummary(state.platforms, state.goals),
+    [state.platforms, state.goals],
+  );
+  const audienceCurrent = audienceGoal.currentValue;
+  const audienceTarget = audienceGoal.targetValue;
+  const subscriberProgress = goalProgress(audienceGoal);
+  const audienceRemaining = goalRemaining(audienceGoal);
   const audienceData = useMemo(() => {
-    const monthSeries = buildAggregatedAudienceSeries(state.platformMetrics, 30).slice(-7);
-    const yearSeries = buildAggregatedAudienceSeries(state.platformMetrics, 90).slice(-12);
-
-    if (monthSeries.length >= 2) {
-      return { month: monthSeries, year: yearSeries.length >= 2 ? yearSeries : monthSeries };
-    }
-
-    const buildFallback = (labels: string[], startOffset: number) => {
-      const startValue = Math.max(0, audienceCurrent - startOffset);
-      const growth = audienceCurrent - startValue;
-
-      return labels.map((label, index) => {
-        const progress = labels.length > 1 ? index / (labels.length - 1) : 1;
-        const curvedProgress = Math.pow(progress, 1.14);
-
-        return {
-          label,
-          subscribers: Math.round(startValue + growth * curvedProgress),
-        };
-      });
-    };
-
     return {
-      month: buildFallback(["1", "5", "10", "15", "20", "25", "30"], 420),
-      year: buildFallback(["июн", "июл", "авг", "сен", "окт", "ноя", "дек", "янв", "фев", "мар", "апр", "май"], 2200),
+      month: buildAudienceSeries(state.platformMetrics, state.platforms, audienceCurrent, "month"),
+      year: buildAudienceSeries(state.platformMetrics, state.platforms, audienceCurrent, "year"),
     };
-  }, [audienceCurrent, state.platformMetrics]);
+  }, [audienceCurrent, state.platformMetrics, state.platforms]);
 
   const platformGrowth = useMemo(
     () => getPlatformGrowthLeaderboard(state.platformMetrics, state.platforms, 30).slice(0, 3),

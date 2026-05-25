@@ -15,12 +15,15 @@ import {
   mapProfileForDb,
   mapPublication,
   mapPublicationForDb,
+  mapReference,
+  mapReferenceForDb,
   mapTemplate,
   mapTemplateFiles,
   mapTemplateForDb,
 } from "../data/mappers";
 import type {
   CheckpointRow,
+  CreatorReferenceRow,
   GoalRow,
   IdeaRow,
   PlatformMetricRow,
@@ -114,6 +117,18 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
   const firstError = results.find(result => result.error)?.error;
   if (firstError) throw classifyApiError(firstError);
 
+  let referenceRows: CreatorReferenceRow[] = [];
+  try {
+    const referencesResult = await client
+      .from("creator_references")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    referenceRows = referencesResult.error ? [] : (referencesResult.data ?? []) as CreatorReferenceRow[];
+  } catch {
+    referenceRows = [];
+  }
+
   const hasData = Boolean(
     profileResult.data
     || platformsResult.data?.length
@@ -122,7 +137,8 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
     || ideasResult.data?.length
     || publicationsResult.data?.length
     || checkpointsResult.data?.length
-    || templatesResult.data?.length,
+    || templatesResult.data?.length
+    || referenceRows.length,
   );
   if (!hasData) return null;
 
@@ -149,6 +165,7 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
     templates: (templatesResult.data ?? []).map(row =>
       mapTemplate(row as TemplateRow, filesByTemplate.get(row.id) ?? []),
     ),
+    references: referenceRows.map(row => mapReference(row)),
   } as AppState;
 }
 
@@ -232,6 +249,13 @@ async function saveNormalizedWorkspace(userId: string, state: AppState): Promise
     ["user_id", "id"],
   );
   await deleteMissingRows("templates", userId, state.templates.map(template => template.id));
+
+  await upsertRows(
+    "creator_references",
+    (state.references ?? []).map(reference => mapReferenceForDb(userId, reference)),
+    ["user_id", "id"],
+  );
+  await deleteMissingRows("creator_references", userId, (state.references ?? []).map(reference => reference.id));
 }
 
 async function deleteMissingRows(table: string, userId: string, ids: string[]) {

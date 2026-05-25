@@ -1,4 +1,4 @@
-import type { AppState, Checkpoint, Goal, Idea, Platform, PlatformMetric, Profile, Publication, Template } from "../types";
+import type { AppState, Checkpoint, CreatorReference, Goal, Idea, Platform, PlatformMetric, Profile, Publication, Template } from "../types";
 import { saveCheckpoint, removeCheckpoint } from "../repositories/checkpoints-repository";
 import { saveGoal, saveGoals, removeGoal } from "../repositories/goals-repository";
 import { saveIdea, removeIdea } from "../repositories/ideas-repository";
@@ -10,6 +10,7 @@ import {
 import { savePlatform, savePlatforms, removePlatform } from "../repositories/platforms-repository";
 import { saveProfile } from "../repositories/profile-repository";
 import { savePublication, removePublication } from "../repositories/publications-repository";
+import { saveReference, removeReference } from "../repositories/references-repository";
 import { saveTemplate, removeTemplate } from "../repositories/templates-repository";
 
 export type CloudSyncApi = {
@@ -31,6 +32,8 @@ export type CloudSyncApi = {
   removeCheckpoint: (checkpointId: string) => Promise<void>;
   saveTemplate: (template: Template) => Promise<void>;
   removeTemplate: (templateId: string) => Promise<void>;
+  saveReference: (reference: CreatorReference) => Promise<void>;
+  removeReference: (referenceId: string) => Promise<void>;
 };
 
 export function createCloudSync(userId: string): CloudSyncApi {
@@ -53,6 +56,8 @@ export function createCloudSync(userId: string): CloudSyncApi {
     removeCheckpoint: checkpointId => removeCheckpoint(userId, checkpointId),
     saveTemplate: template => saveTemplate(userId, template),
     removeTemplate: templateId => removeTemplate(userId, templateId),
+    saveReference: reference => saveReference(userId, reference),
+    removeReference: referenceId => removeReference(userId, referenceId),
   };
 }
 

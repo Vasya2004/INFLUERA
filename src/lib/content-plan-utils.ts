@@ -40,7 +40,7 @@ export const PUBLICATION_STATUS_COLORS: Record<PublicationStatus, string> = {
   "запланировано": "bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300",
   "в работе": "bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300",
   "готово": "bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300",
-  "опубликовано": "bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300",
+  "опубликовано": "bg-emerald-500/15 text-emerald-700 border-emerald-500/35 dark:text-emerald-300",
 };
 
 export function migratePublicationStatus(status: string): PublicationStatus {

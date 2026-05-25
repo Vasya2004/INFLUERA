@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { CalendarDays, CheckCircle2, Flag, Lightbulb, Rocket, Send, UserRound } from "lucide-react";
-import type { ContentFormat, GoalType, Platform, PlatformRole, Priority, PublicationStatus } from "@/lib/types";
+import type { ContentFormat, Platform, PlatformRole, Priority, PublicationStatus } from "@/lib/types";
 import { CONTENT_FORMATS, DEFAULT_PUBLICATION_CHECKLIST } from "@/lib/content-plan-utils";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,6 @@ import { AppLogo } from "@/components/app/logo";
 
 const PLATFORM_OPTIONS = ["Telegram", "Instagram", "YouTube", "TikTok", "VK", "Threads", "X", "Rutube", "LinkedIn", "Другое"];
 const PRIORITIES: Priority[] = ["высокий", "средний", "низкий"];
-const GOAL_TYPES: GoalType[] = ["подписчики", "частота публикаций", "доход", "другое"];
 const STATUSES: PublicationStatus[] = ["запланировано", "в работе", "готово"];
 
 function genId(prefix: string) {
@@ -57,8 +56,7 @@ export default function OnboardingPage() {
     weeklyPlan: "3",
   });
   const [goal, setGoal] = useState({
-    title: "Общая аудитория",
-    type: "подписчики" as GoalType,
+    title: "Первая цель по подписчикам",
     targetValue: "1000",
     deadline: goalDeadlineDate(),
   });
@@ -94,7 +92,7 @@ export default function OnboardingPage() {
     const ideaId = genId("i");
     const publicationId = genId("pub");
     const currentSubscribers = Math.max(0, Number.parseInt(platform.subscribers, 10) || 0);
-    const targetSubscribers = Math.max(1, Number.parseInt(platform.targetSubscribers, 10) || 1);
+    const goalTargetSubscribers = Math.max(1, Number.parseInt(goal.targetValue, 10) || 1);
 
     const firstPlatform: Platform = {
       id: platformId,
@@ -102,7 +100,7 @@ export default function OnboardingPage() {
       username: platform.username,
       url: platform.url,
       subscribers: currentSubscribers,
-      targetSubscribers,
+      targetSubscribers: goalTargetSubscribers,
       role: platform.role,
       weeklyPlan: Math.max(0, Number.parseInt(platform.weeklyPlan, 10) || 0),
     };
@@ -125,13 +123,13 @@ export default function OnboardingPage() {
           notes: "Стартовое значение из onboarding",
         }],
         goals: [{
-          id: "g-primary",
+          id: genId("g"),
           title: goal.title.trim(),
-          type: goal.type,
+          type: "подписчики",
           currentValue: currentSubscribers,
-          targetValue: Math.max(1, Number.parseInt(goal.targetValue, 10) || targetSubscribers),
+          targetValue: goalTargetSubscribers,
           deadline: new Date(goal.deadline).toISOString(),
-          isPrimary: true,
+          platformId,
         }],
         ideas: [{
           id: ideaId,
@@ -202,14 +200,14 @@ export default function OnboardingPage() {
             <CardTitle>
               {step === 0 && "Профиль"}
               {step === 1 && "Первая платформа"}
-              {step === 2 && "Главная цель"}
+              {step === 2 && "Первая цель"}
               {step === 3 && "Первая идея"}
               {step === 4 && "Первая публикация"}
             </CardTitle>
             <CardDescription>
               {step === 0 && "Укажите имя/бренд и нишу, чтобы рабочее пространство было персональным."}
               {step === 1 && "Добавьте площадку и текущее количество подписчиков."}
-              {step === 2 && "Выберите общую цель или цель по аудитории."}
+              {step === 2 && "Создайте первую цель по подписчикам для выбранной платформы."}
               {step === 3 && "Зафиксируйте первую идею, с которой начнёте контент-план."}
               {step === 4 && "Сразу запланируйте первую публикацию."}
             </CardDescription>
@@ -289,25 +287,33 @@ export default function OnboardingPage() {
               <>
                 <div className="space-y-1.5">
                   <Label>Название цели</Label>
-                  <Input value={goal.title} onChange={e => setGoal(current => ({ ...current, title: e.target.value }))} />
+                  <Input
+                    value={goal.title}
+                    onChange={e => setGoal(current => ({ ...current, title: e.target.value }))}
+                    placeholder={`Вырастить ${platform.name} до ${goal.targetValue}`}
+                  />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-1.5">
-                    <Label>Тип</Label>
-                    <Select value={goal.type} onValueChange={value => setGoal(current => ({ ...current, type: value as GoalType }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{GOAL_TYPES.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label>Целевое значение</Label>
-                    <Input type="number" min={1} value={goal.targetValue} onChange={e => setGoal(current => ({ ...current, targetValue: e.target.value }))} />
+                    <Input
+                      type="number"
+                      min={1}
+                      value={goal.targetValue}
+                      onChange={e => {
+                        setGoal(current => ({ ...current, targetValue: e.target.value }));
+                        setPlatform(current => ({ ...current, targetSubscribers: e.target.value }));
+                      }}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Дедлайн</Label>
                     <Input type="date" value={goal.deadline} onChange={e => setGoal(current => ({ ...current, deadline: e.target.value }))} />
                   </div>
                 </div>
+                <p className="rounded-xl border border-border/70 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                  Эта цель появится на странице «Цели» и будет участвовать в расчёте общей аудитории на главной.
+                </p>
               </>
             )}
 
@@ -405,4 +411,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-

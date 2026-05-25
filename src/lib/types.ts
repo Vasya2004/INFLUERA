@@ -41,13 +41,23 @@ export interface Goal {
 export type IdeaStatus = "новая" | "в работе" | "превращена в публикацию" | "отложена" | "архив";
 export type ContentFormat = "Reels/Shorts/TikTok" | "пост" | "карусель" | "Telegram-пост" | "видео" | "сторис";
 export type Priority = "высокий" | "средний" | "низкий";
+export type IdeaScriptMode = "video" | "post";
+
+export interface IdeaScriptRow {
+  id: string;
+  text: string;
+  storyboard: string;
+}
 
 export interface Idea {
   id: string;
   title: string;
   description: string;
+  sourceUrl?: string;
   script?: string;
   storyboard?: string;
+  scriptRows?: IdeaScriptRow[];
+  scriptMode?: IdeaScriptMode;
   format: ContentFormat;
   platformId?: string;
   priority: Priority;
@@ -127,6 +137,25 @@ export interface Template {
   files?: TemplateFile[];
 }
 
+export type CreatorReferenceType = "блогер" | "эксперт" | "бренд";
+
+export interface CreatorReference {
+  id: string;
+  name: string;
+  handle: string;
+  platform: string;
+  url: string;
+  type: CreatorReferenceType;
+  niche: string;
+  contentFocus: string;
+  whyRelevant: string;
+  notes: string;
+  tags?: string[];
+  rating: number;
+  favorite?: boolean;
+  createdAt: string;
+}
+
 export interface Profile {
   name: string;
   niche: string;
@@ -152,5 +181,6 @@ export interface AppState {
   publications: Publication[];
   checkpoints: Checkpoint[];
   templates: Template[];
+  references: CreatorReference[];
   profile: Profile;
 }

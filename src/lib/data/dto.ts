@@ -10,6 +10,10 @@ export type ProfileRow = {
   tone: string | null;
   expertise: string | null;
   opportunities: string | null;
+  avatar_url?: string | null;
+  avatar_storage_path?: string | null;
+  cover_url?: string | null;
+  cover_storage_path?: string | null;
 };
 
 export type PlatformRow = {
@@ -54,8 +58,11 @@ export type IdeaRow = {
   user_id: string;
   title: string;
   description: string | null;
+  source_url?: string | null;
   script?: string | null;
   storyboard?: string | null;
+  script_mode?: string | null;
+  script_rows?: unknown;
   format: string;
   platform_id: string | null;
   priority: string;
@@ -100,6 +107,24 @@ export type TemplateRow = {
   description: string;
   usage: string | null;
   content: string;
+};
+
+export type CreatorReferenceRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  handle: string | null;
+  platform: string | null;
+  url: string | null;
+  type: string;
+  niche: string | null;
+  content_focus: string | null;
+  why_relevant: string | null;
+  notes: string | null;
+  tags: string[] | null;
+  rating: number | null;
+  favorite: boolean | null;
+  created_at: string;
 };
 
 export type TemplateFileRow = {

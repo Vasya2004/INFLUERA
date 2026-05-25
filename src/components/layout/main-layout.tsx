@@ -31,6 +31,25 @@ function exportData(state: object) {
   URL.revokeObjectURL(url);
 }
 
+function ProfileAvatar({ avatarUrl, initials, className }: {
+  avatarUrl?: string;
+  initials: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn(
+      "shrink-0 overflow-hidden rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_22px_hsl(var(--primary)/0.22)]",
+      className,
+    )}>
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <span className="select-none text-xs font-bold text-primary-foreground">{initials}</span>
+      )}
+    </div>
+  );
+}
+
 function SidebarContent({
   location,
   onNav,
@@ -48,6 +67,7 @@ function SidebarContent({
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const profileName = state.profile?.name || "";
   const accountLine = cloudEnabled && user?.email ? user.email : (state.profile?.niche || "Мой блог");
+  const avatarUrl = state.profile?.avatarUrl;
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -117,9 +137,7 @@ function SidebarContent({
                 onClick={() => { setProfileMenuOpen(false); onNav?.(); }}
                 className="flex items-center gap-3 px-3.5 py-3.5 transition-colors hover:bg-primary/8"
               >
-                <div className="h-9 w-9 shrink-0 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_24px_hsl(var(--primary)/0.24)]">
-                  <span className="select-none text-xs font-bold text-primary-foreground">{initials}</span>
-                </div>
+                <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-9 w-9 shadow-[0_0_24px_hsl(var(--primary)/0.24)]" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold leading-tight">{profileName || "Твой профиль"}</p>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">{accountLine}</p>
@@ -205,9 +223,7 @@ function SidebarContent({
           aria-expanded={profileMenuOpen}
           className="glass-card group flex w-full items-center gap-3 rounded-3xl px-3.5 py-3 text-left transition-all duration-150 hover:border-primary/25 hover:bg-primary/8"
         >
-          <div className="h-8 w-8 rounded-2xl bg-primary flex items-center justify-center shrink-0 shadow-[0_0_22px_hsl(var(--primary)/0.22)]">
-            <span className="text-primary-foreground text-xs font-bold select-none">{initials}</span>
-          </div>
+          <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-8 w-8" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold leading-tight truncate">
               {profileName || "Твой профиль"}
@@ -235,6 +251,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   const initials = profileName
     ? profileName.trim().split(/\s+/).map((word: string) => word[0]).join("").toUpperCase().slice(0, 2)
     : "IN";
+  const avatarUrl = state.profile?.avatarUrl;
 
   const isActiveRoute = (item: typeof mainNav[number]) => item.href === "/"
     ? location === "/"
@@ -273,8 +290,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               aria-label="Профиль"
               className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-primary/25 bg-primary text-primary-foreground shadow-[0_0_24px_hsl(var(--primary)/0.24)] transition-opacity hover:opacity-90"
             >
-              {state.profile?.avatarUrl ? (
-                <img src={state.profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
                 <span className="select-none text-xs font-bold">{initials}</span>
               )}

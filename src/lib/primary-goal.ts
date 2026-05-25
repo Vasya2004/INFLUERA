@@ -12,18 +12,53 @@ export function getPrimaryGoal(goals: Goal[]): Goal | undefined {
   return goals.find(g => g.isPrimary);
 }
 
+export function getAudienceGoalSummary(platforms: Platform[], goals: Goal[]): Goal {
+  const platformSubscriberGoals = goals.filter(goal =>
+    !goal.isPrimary && goal.type === "подписчики" && Boolean(goal.platformId),
+  );
+  const targetByPlatform = new Map<string, number>();
+
+  for (const goal of platformSubscriberGoals) {
+    const current = targetByPlatform.get(goal.platformId!) ?? 0;
+    targetByPlatform.set(goal.platformId!, Math.max(current, goal.targetValue));
+  }
+
+  const goalsTarget = [...targetByPlatform.values()].reduce((sum, value) => sum + value, 0);
+  const targetValue = goalsTarget > 0 ? goalsTarget : sumPlatformTargets(platforms);
+
+  return {
+    id: "audience-summary",
+    title: "Общая аудитория",
+    type: "подписчики",
+    currentValue: sumPlatformSubscribers(platforms),
+    targetValue: targetValue || 10_000,
+    deadline: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
+  };
+}
+
 export function buildDefaultPrimaryGoal(platforms: AppState["platforms"]): Goal {
-  const currentValue = sumPlatformSubscribers(platforms);
-  const targetValue = sumPlatformTargets(platforms) || 10_000;
+  const summary = getAudienceGoalSummary(platforms, []);
 
   return {
     id: "g-primary",
     title: "Общая аудитория",
     type: "подписчики",
-    currentValue,
-    targetValue,
-    deadline: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
+    currentValue: summary.currentValue,
+    targetValue: summary.targetValue,
+    deadline: summary.deadline,
     isPrimary: true,
+  };
+}
+
+export function buildPlatformSubscriberGoal(platform: Platform): Goal {
+  return {
+    id: `g-platform-${platform.id}`,
+    title: `${platform.name} до ${Math.max(platform.targetSubscribers, 1).toLocaleString("ru-RU")}`,
+    type: "подписчики",
+    currentValue: platform.subscribers,
+    targetValue: Math.max(platform.targetSubscribers, 1),
+    deadline: new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString(),
+    platformId: platform.id,
   };
 }
 
@@ -89,19 +124,16 @@ export function distributeAudienceTotal(platforms: Platform[], newTotal: number)
 }
 
 export function syncAudienceGoals(platforms: Platform[], goals: Goal[]): Goal[] {
-  const totalSubscribers = sumPlatformSubscribers(platforms);
-  const totalTarget = sumPlatformTargets(platforms);
+  const platformById = new Map(platforms.map(platform => [platform.id, platform]));
+  const prunedGoals = goals.filter(goal => {
+    if (!goal.id.startsWith("g-platform-") || !goal.platformId) return true;
+    const platform = platformById.get(goal.platformId);
+    return Boolean(platform && platform.targetSubscribers > 0);
+  });
 
-  return goals.map(goal => {
-    if (goal.isPrimary) {
-      return {
-        ...goal,
-        currentValue: totalSubscribers,
-        targetValue: totalTarget > 0 ? totalTarget : goal.targetValue,
-      };
-    }
+  const syncedGoals = prunedGoals.map(goal => {
     if (goal.type === "подписчики" && goal.platformId) {
-      const platform = platforms.find(p => p.id === goal.platformId);
+      const platform = platformById.get(goal.platformId);
       if (platform) {
         return {
           ...goal,
@@ -109,6 +141,30 @@ export function syncAudienceGoals(platforms: Platform[], goals: Goal[]): Goal[] 
           targetValue: platform.targetSubscribers > 0 ? platform.targetSubscribers : goal.targetValue,
         };
       }
+    }
+    return goal;
+  });
+
+  const existingSubscriberGoalPlatformIds = new Set(
+    syncedGoals
+      .filter(goal => !goal.isPrimary && goal.type === "подписчики" && Boolean(goal.platformId))
+      .map(goal => goal.platformId),
+  );
+
+  const generatedPlatformGoals = platforms
+    .filter(platform => platform.targetSubscribers > 0 && !existingSubscriberGoalPlatformIds.has(platform.id))
+    .map(platform => buildPlatformSubscriberGoal(platform));
+
+  const withPlatformGoals = [...syncedGoals, ...generatedPlatformGoals];
+  const audienceSummary = getAudienceGoalSummary(platforms, withPlatformGoals);
+
+  return withPlatformGoals.map(goal => {
+    if (goal.isPrimary) {
+      return {
+        ...goal,
+        currentValue: audienceSummary.currentValue,
+        targetValue: audienceSummary.targetValue > 0 ? audienceSummary.targetValue : goal.targetValue,
+      };
     }
     return goal;
   });

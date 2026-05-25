@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { Profile } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Image, Upload, UserCircle, X } from "lucide-react";
+import { CheckCircle2, Upload, UserCircle, X } from "lucide-react";
 import { PageHeader } from "@/components/app/page";
 import { validateFile } from "@/lib/file-validation";
 
@@ -37,9 +37,12 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [assetError, setAssetError] = useState("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const pct = completeness(form);
+
+  useEffect(() => {
+    setForm({ ...state.profile });
+  }, [state.profile]);
 
   const set = (k: keyof Profile, v: string) => {
     setSaved(false);
@@ -52,11 +55,11 @@ export default function ProfilePage() {
     toast({ title: "Профиль сохранён", description: "Изменения успешно применены." });
   }
 
-  function pickAsset(kind: "avatar" | "cover") {
-    (kind === "avatar" ? avatarInputRef : coverInputRef).current?.click();
+  function pickAvatar() {
+    avatarInputRef.current?.click();
   }
 
-  function handleAssetChange(kind: "avatar" | "cover", e: React.ChangeEvent<HTMLInputElement>) {
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const validationError = validateFile(file, "profile-assets");
@@ -69,9 +72,7 @@ export default function ProfilePage() {
     const reader = new FileReader();
     reader.onload = () => {
       setSaved(false);
-      setForm(current => kind === "avatar"
-        ? { ...current, avatarUrl: reader.result as string, avatarStoragePath: undefined }
-        : { ...current, coverUrl: reader.result as string, coverStoragePath: undefined });
+      setForm(current => ({ ...current, avatarUrl: reader.result as string, avatarStoragePath: undefined }));
     };
     reader.onerror = () => setAssetError("Не удалось прочитать файл");
     reader.readAsDataURL(file);
@@ -94,64 +95,46 @@ export default function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Визуальные материалы</CardTitle>
-            <CardDescription>Аватар и обложка профиля</CardDescription>
+            <CardDescription>Аватар профиля</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <input ref={avatarInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="sr-only" onChange={e => handleAssetChange("avatar", e)} />
-            <input ref={coverInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="sr-only" onChange={e => handleAssetChange("cover", e)} />
-            <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
-              <div className="relative h-32 bg-muted sm:h-40">
-                {form.coverUrl ? (
-                  <img src={form.coverUrl} alt="Обложка профиля" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-muted-foreground">
-                    <Image className="h-8 w-8" />
-                  </div>
-                )}
-                <Button type="button" size="sm" variant="secondary" className="absolute right-3 top-3 gap-1.5" onClick={() => pickAsset("cover")}>
-                  <Upload className="h-3.5 w-3.5" />
-                  Обложка
-                </Button>
-                {form.coverUrl && (
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="secondary"
-                    className="absolute right-3 top-14 h-8 w-8"
-                    onClick={() => setForm(current => ({ ...current, coverUrl: undefined, coverStoragePath: undefined }))}
-                    aria-label="Удалить обложку"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
-              <div className="-mt-8 flex items-end justify-between gap-3 px-4 pb-4">
-                <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-background bg-background shadow-sm">
+            <input ref={avatarInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="sr-only" onChange={handleAvatarChange} />
+            <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="relative h-24 w-24 overflow-hidden rounded-full border-4 border-background bg-background shadow-sm ring-1 ring-border/80">
                   {form.avatarUrl ? (
                     <img src={form.avatarUrl} alt="Аватар профиля" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                      <UserCircle className="h-10 w-10" />
+                      <UserCircle className="h-12 w-12" />
                     </div>
                   )}
                 </div>
-                <div className="flex flex-wrap justify-end gap-2">
-                  <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => pickAsset("avatar")}>
-                    <Upload className="h-3.5 w-3.5" />
-                    Аватар
-                  </Button>
-                  {form.avatarUrl && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setForm(current => ({ ...current, avatarUrl: undefined, avatarStoragePath: undefined }))}
-                    >
-                      Удалить
-                    </Button>
-                  )}
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Аватар</p>
+                  <p className="mt-1 text-xs text-muted-foreground">PNG, JPG, SVG или WebP до 2 МБ.</p>
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:justify-end">
+                <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={pickAvatar}>
+                  <Upload className="h-3.5 w-3.5" />
+                  Загрузить
+                </Button>
+                {form.avatarUrl && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="gap-1.5 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      setSaved(false);
+                      setForm(current => ({ ...current, avatarUrl: undefined, avatarStoragePath: undefined }));
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Удалить
+                  </Button>
+                )}
               </div>
             </div>
             {assetError && (

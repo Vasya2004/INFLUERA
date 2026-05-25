@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Calendar, Trophy, Star, Trash2 } from "lucide-react";
-import { getPrimaryGoal, goalProgress, isSubscriberGoalSynced } from "@/lib/primary-goal";
+import { goalProgress, isSubscriberGoalSynced } from "@/lib/primary-goal";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { EmptyState, PageHeader } from "@/components/app/page";
@@ -389,7 +389,6 @@ export default function Goals() {
   const [editGoal, setEditGoal] = useState<Goal | undefined>();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const primaryGoal = getPrimaryGoal(state.goals);
   const otherGoals = state.goals.filter(g => !g.isPrimary);
 
   function openAdd() { setEditGoal(undefined); setDialogOpen(true); }
@@ -406,7 +405,7 @@ export default function Goals() {
         }
       />
 
-      {state.goals.length === 0 ? (
+      {otherGoals.length === 0 ? (
         <EmptyState
           icon={Trophy}
           title="Нет активных целей"
@@ -416,32 +415,18 @@ export default function Goals() {
         />
       ) : (
         <div className="space-y-4">
-          {primaryGoal && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {otherGoals.map((goal, index) => (
               <GoalCard
-                goal={primaryGoal}
-                index={0}
+                key={goal.id}
+                goal={goal}
+                index={index}
                 onEdit={openEdit}
                 onDelete={setDeleteId}
-                platformName={state.platforms.find(p => p.id === primaryGoal.platformId)?.name}
+                platformName={state.platforms.find(p => p.id === goal.platformId)?.name}
               />
-            </div>
-          )}
-
-          {otherGoals.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {otherGoals.map((goal, index) => (
-                <GoalCard
-                  key={goal.id}
-                  goal={goal}
-                  index={index + (primaryGoal ? 1 : 0)}
-                  onEdit={openEdit}
-                  onDelete={setDeleteId}
-                  platformName={state.platforms.find(p => p.id === goal.platformId)?.name}
-                />
-              ))}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       )}
 
