@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { ArrowRight, Lightbulb } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 import type { IdeaStatus, Platform, PlatformMetric, Priority, Publication } from "@/lib/types";
 import { getAudienceGoalSummary, goalProgress, goalRemaining } from "@/lib/primary-goal";
 import {
@@ -48,6 +48,7 @@ const audiencePeriods: Array<{ value: AudiencePeriod; label: string }> = [
 const glassPanelClass = "glass-card text-foreground";
 const glassPanelNestedClass = "glass-card text-foreground";
 const mutedTextClass = "text-muted-foreground";
+const panelActionLinkClass = "inline-flex min-h-10 items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-4 py-2 text-sm font-semibold text-primary shadow-[0_0_24px_hsl(var(--primary)/0.16)] transition-colors hover:border-primary/40 hover:bg-primary/18 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45";
 
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -396,12 +397,11 @@ export default function Dashboard() {
         >
           <SectionPanel
             title="Ближайшие публикации"
-            description="Запланированный контент"
             className={`h-full rounded-3xl ${glassPanelNestedClass}`}
             accent="primary"
             action={
-              <Link href="/content-plan" className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary">
-                Все <ArrowRight className="h-3 w-3" />
+              <Link href="/content-plan" className={panelActionLinkClass}>
+                Все
               </Link>
             }
           >
@@ -451,10 +451,9 @@ export default function Dashboard() {
           <div className="relative flex items-center justify-between border-b border-border/70 px-5 py-4 dark:border-white/10">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Активные цели</h2>
-              <p className={`mt-0.5 text-xs ${mutedTextClass}`}>Текущий прогресс</p>
             </div>
-            <Link href="/goals" className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary">
-              Все цели <ArrowRight className="h-3 w-3" />
+            <Link href="/goals" className={panelActionLinkClass}>
+              Все цели
             </Link>
           </div>
 
@@ -503,12 +502,11 @@ export default function Dashboard() {
         >
           <SectionPanel
             title="Идеи"
-            description="Банк гипотез для контента"
             className={`h-full rounded-3xl ${glassPanelNestedClass}`}
             accent="violet"
             action={
-              <Link href="/ideas" className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary">
-                Все <ArrowRight className="h-3 w-3" />
+              <Link href="/ideas" className={panelActionLinkClass}>
+                Все
               </Link>
             }
           >
@@ -571,12 +569,11 @@ export default function Dashboard() {
         >
           <SectionPanel
             title="Платформы"
-            description="Прогресс по площадкам"
             className={`h-full rounded-3xl ${glassPanelNestedClass}`}
             accent="emerald"
             action={
-              <Link href="/platforms" className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary">
-                Все <ArrowRight className="h-3 w-3" />
+              <Link href="/platforms" className={panelActionLinkClass}>
+                Все
               </Link>
             }
           >

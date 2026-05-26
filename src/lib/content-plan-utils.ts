@@ -2,6 +2,8 @@ import type {
   Checkpoint,
   CheckpointType,
   ContentFormat,
+  IdeaScriptMode,
+  IdeaScriptRow,
   Publication,
   PublicationChecklistItem,
   PublicationStatus,
@@ -94,6 +96,10 @@ export function parsePublicationChecklist(raw: unknown): {
   hook?: string;
   caption?: string;
   cta?: string;
+  script?: string;
+  storyboard?: string;
+  scriptMode?: IdeaScriptMode;
+  scriptRows?: IdeaScriptRow[];
   templateId?: string;
 } {
   if (Array.isArray(raw)) {
@@ -111,6 +117,10 @@ export function parsePublicationChecklist(raw: unknown): {
       hook: typeof value.hook === "string" ? value.hook : undefined,
       caption: typeof value.caption === "string" ? value.caption : undefined,
       cta: typeof value.cta === "string" ? value.cta : undefined,
+      script: typeof value.script === "string" ? value.script : undefined,
+      storyboard: typeof value.storyboard === "string" ? value.storyboard : undefined,
+      scriptMode: parseScriptMode(value.scriptMode ?? value.contentMode ?? value.script_mode),
+      scriptRows: parsePublicationScriptRows(value.scriptRows),
       templateId: typeof value.templateId === "string" ? value.templateId : undefined,
     };
   }
@@ -124,8 +134,34 @@ export function serializePublicationChecklist(publication: Publication) {
     hook: publication.hook || undefined,
     caption: publication.caption || undefined,
     cta: publication.cta || undefined,
+    script: publication.script || undefined,
+    storyboard: publication.storyboard || undefined,
+    scriptMode: publication.scriptMode || undefined,
+    contentMode: publication.scriptMode || undefined,
+    scriptRows: publication.scriptRows ?? undefined,
     templateId: publication.templateId || undefined,
   };
+}
+
+function parseScriptMode(value: unknown): IdeaScriptMode | undefined {
+  return value === "video" || value === "post" ? value : undefined;
+}
+
+function parsePublicationScriptRows(value: unknown): IdeaScriptRow[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rows = value
+    .map((item): IdeaScriptRow | null => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      return {
+        id: typeof row.id === "string" ? row.id : Math.random().toString(36).slice(2, 9),
+        text: typeof row.text === "string" ? row.text : "",
+        storyboard: typeof row.storyboard === "string" ? row.storyboard : "",
+      };
+    })
+    .filter((row): row is IdeaScriptRow => Boolean(row));
+
+  return rows.length ? rows : undefined;
 }
 
 export function ensurePublicationChecklist(publication: Publication): Publication {

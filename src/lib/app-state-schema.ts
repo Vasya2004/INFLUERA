@@ -64,6 +64,16 @@ const publicationChecklistItemSchema = z.object({
   done: z.boolean(),
 });
 
+const fileAttachmentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  storagePath: optionalString,
+  url: optionalString,
+  mimeType: optionalString,
+  sizeBytes: z.number().optional(),
+  bucket: z.enum(["template-files", "publication-files"]).optional(),
+});
+
 const publicationSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -77,8 +87,17 @@ const publicationSchema = z.object({
   hook: optionalString,
   caption: optionalString,
   cta: optionalString,
+  script: optionalString,
+  storyboard: optionalString,
+  scriptMode: z.enum(["video", "post"]).optional(),
+  scriptRows: z.array(z.object({
+    id: z.string(),
+    text: z.string(),
+    storyboard: z.string(),
+  })).optional(),
   templateId: optionalString,
   checklist: z.array(publicationChecklistItemSchema).optional(),
+  files: z.array(fileAttachmentSchema).optional(),
 });
 
 const checkpointSchema = z.object({
@@ -86,13 +105,6 @@ const checkpointSchema = z.object({
   type: z.string(),
   date: z.string(),
   note: optionalString,
-});
-
-const templateFileSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  url: z.string(),
-  mimeType: optionalString,
 });
 
 const templateSchema = z.object({
@@ -103,7 +115,7 @@ const templateSchema = z.object({
   description: z.string(),
   usage: z.string(),
   content: z.string(),
-  files: z.array(templateFileSchema).optional(),
+  files: z.array(fileAttachmentSchema).optional(),
 });
 
 const referenceSchema = z.object({

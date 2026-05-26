@@ -111,6 +111,10 @@ export interface Publication {
   hook?: string;
   caption?: string;
   cta?: string;
+  script?: string;
+  storyboard?: string;
+  scriptRows?: IdeaScriptRow[];
+  scriptMode?: IdeaScriptMode;
   templateId?: string;
   checklist?: PublicationChecklistItem[];
   files?: FileAttachment[];

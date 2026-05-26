@@ -337,11 +337,11 @@ export default function IdeaDetail() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <FileText className="h-5 w-5 text-primary" />
-                  Сценарий
+                  Сценарий / пост
                 </CardTitle>
                 <div className="flex flex-wrap gap-2">
                   <div className="grid grid-cols-2 rounded-xl border border-border/80 bg-background/80 p-1">
-                    {(["video", "post"] as IdeaScriptMode[]).map(mode => (
+                    {(["post", "video"] as IdeaScriptMode[]).map(mode => (
                       <button
                         key={mode}
                         type="button"
@@ -351,20 +351,14 @@ export default function IdeaDetail() {
                           form.scriptMode === mode ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                         )}
                       >
-                        {mode === "video" ? "Видео" : "Пост"}
+                        {mode === "post" ? "Пост" : "Видео"}
                       </button>
                     ))}
                   </div>
-                  {form.scriptMode === "video" && (
-                    <Button type="button" variant="outline" size="sm" className="gap-2" onClick={addScriptRow}>
-                      <Plus className="h-4 w-4" />
-                      Строка
-                    </Button>
-                  )}
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {form.scriptMode === "post" ? (
                 <div className="space-y-1.5">
                   <Label>Текст поста</Label>
@@ -420,6 +414,17 @@ export default function IdeaDetail() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                  <div className="border-t border-border/80 bg-muted/20 p-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11 w-full rounded-xl gap-2"
+                      onClick={addScriptRow}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Добавить строку
+                    </Button>
                   </div>
                 </div>
               )}
@@ -491,7 +496,7 @@ export default function IdeaDetail() {
                 return (
                   <Link
                     key={publication.id}
-                    href="/content-plan"
+                    href={`/content-plan/${publication.id}`}
                     className="block rounded-xl border border-border/80 bg-muted/20 p-3 transition-colors hover:border-primary/40"
                   >
                     <p className="text-sm font-semibold">{publication.title}</p>

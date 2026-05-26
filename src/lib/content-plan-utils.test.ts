@@ -69,8 +69,12 @@ describe("content plan utilities", () => {
       items: [{ id: "a", label: "Test", done: false }],
       hook: "Hook",
       caption: "Caption",
+      scriptMode: "video",
+      scriptRows: [{ id: "row-1", text: "Text", storyboard: "Frame" }],
     });
     expect(parsed.hook).toBe("Hook");
+    expect(parsed.scriptMode).toBe("video");
+    expect(parsed.scriptRows).toEqual([{ id: "row-1", text: "Text", storyboard: "Frame" }]);
     expect(parsed.items).toHaveLength(1);
   });
 });

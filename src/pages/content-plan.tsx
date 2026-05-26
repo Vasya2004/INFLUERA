@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useStore } from "@/lib/store";
-import { Checkpoint, CheckpointType, ContentFormat, Publication, PublicationStatus } from "@/lib/types";
+import { Checkpoint, CheckpointType, ContentFormat, Publication } from "@/lib/types";
 import {
-  CHECKPOINT_HINTS,
   CHECKPOINT_LABELS,
   CHECKPOINT_TYPES,
   CONTENT_FORMATS,
@@ -24,13 +23,11 @@ import {
   startOfDay,
 } from "@/lib/content-plan-utils";
 import { PublicationFormDialog } from "@/components/content-plan/publication-form-dialog";
-import { PublicationDetailSheet } from "@/components/content-plan/publication-detail-sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -77,7 +74,6 @@ function CheckpointDialog({ open, onClose, checkpoint }: {
   const [form, setForm] = useState({
     type: (checkpoint?.type ?? "обновление_подписчиков") as CheckpointType,
     date: checkpoint?.date ? checkpoint.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
-    note: checkpoint?.note ?? "",
   });
 
   useEffect(() => {
@@ -85,7 +81,6 @@ function CheckpointDialog({ open, onClose, checkpoint }: {
       setForm({
         type: (checkpoint?.type ?? "обновление_подписчиков") as CheckpointType,
         date: checkpoint?.date ? checkpoint.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
-        note: checkpoint?.note ?? "",
       });
     }
   }, [open, checkpoint]);
@@ -94,7 +89,7 @@ function CheckpointDialog({ open, onClose, checkpoint }: {
     const data = {
       type: form.type,
       date: new Date(form.date).toISOString(),
-      note: form.note || undefined,
+      note: undefined,
     };
     if (checkpoint) updateCheckpoint({ ...checkpoint, ...data });
     else addCheckpoint(data);
@@ -119,15 +114,10 @@ function CheckpointDialog({ open, onClose, checkpoint }: {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">{CHECKPOINT_HINTS[form.type]}</p>
           </div>
           <div className="space-y-1.5">
             <Label>Дата</Label>
             <Input type="date" value={form.date} onChange={e => setForm(current => ({ ...current, date: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Заметка</Label>
-            <Textarea rows={2} value={form.note} onChange={e => setForm(current => ({ ...current, note: e.target.value }))} />
           </div>
         </div>
         <DialogFooter>
@@ -179,7 +169,7 @@ function getInitialPlanView(): PlanView {
 }
 
 export default function ContentPlan() {
-  const { state, updatePublication, deletePublication, deleteCheckpoint } = useStore();
+  const { state, deletePublication, deleteCheckpoint } = useStore();
   const [, setLocation] = useLocation();
   const [cursorDate, setCursorDate] = useState(() => startOfDay(new Date()));
   const [filters, setFilters] = useState<ContentPlanFilterState>(DEFAULT_FILTERS);
@@ -188,17 +178,9 @@ export default function ContentPlan() {
   const [pubDialogDate, setPubDialogDate] = useState<string | undefined>();
   const [checkpointDialogOpen, setCheckpointDialogOpen] = useState(false);
   const [editPub, setEditPub] = useState<Publication | undefined>();
-  const [detailPubId, setDetailPubId] = useState<string | null>(null);
   const [editCheckpoint, setEditCheckpoint] = useState<Checkpoint | undefined>();
   const [deletePubId, setDeletePubId] = useState<string | null>(null);
   const [deleteCheckpointId, setDeleteCheckpointId] = useState<string | null>(null);
-  const [selectedPubIds, setSelectedPubIds] = useState<string[]>([]);
-  const [bulkStatus, setBulkStatus] = useState<PublicationStatus>("запланировано");
-  const [bulkDate, setBulkDate] = useState(new Date().toISOString().slice(0, 10));
-
-  const detailPub = detailPubId
-    ? state.publications.find(publication => publication.id === detailPubId)
-    : undefined;
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
@@ -258,51 +240,13 @@ export default function ContentPlan() {
     setPubDialogOpen(true);
   }
 
-  function openEditPub(publication: Publication) {
-    setEditPub(publication);
-    setPubDialogDate(undefined);
-    setPubDialogOpen(true);
-  }
-
   function openPublicationTarget(publication: Publication) {
-    if (publication.ideaId) {
-      setLocation(`/ideas/${publication.ideaId}`);
-      return;
-    }
-    openEditPub(publication);
+    setLocation(`/content-plan/${publication.id}`);
   }
 
   function shiftPeriod(direction: -1 | 1) {
     if (view === "month") setCursorDate(current => addMonths(current, direction));
     else if (view === "week") setCursorDate(current => addDays(current, direction * 7));
-  }
-
-  function togglePublicationSelection(publicationId: string, checked: boolean) {
-    setSelectedPubIds(current =>
-      checked ? [...new Set([...current, publicationId])] : current.filter(id => id !== publicationId),
-    );
-  }
-
-  function applyBulkStatus() {
-    for (const publication of state.publications) {
-      if (!selectedPubIds.includes(publication.id)) continue;
-      updatePublication({ ...publication, status: bulkStatus });
-    }
-    setSelectedPubIds([]);
-  }
-
-  function applyBulkDate() {
-    const iso = new Date(bulkDate).toISOString();
-    for (const publication of state.publications) {
-      if (!selectedPubIds.includes(publication.id)) continue;
-      updatePublication({ ...publication, date: iso });
-    }
-    setSelectedPubIds([]);
-  }
-
-  function deleteBulk() {
-    for (const id of selectedPubIds) deletePublication(id);
-    setSelectedPubIds([]);
   }
 
   return (
@@ -478,34 +422,6 @@ export default function ContentPlan() {
         </Popover>
       </div>
 
-      {view === "list" && selectedPubIds.length > 0 && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-end lg:justify-between">
-            <p className="text-sm font-medium">Выбрано: {selectedPubIds.length}</p>
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Статус</Label>
-                <Select value={bulkStatus} onValueChange={value => setBulkStatus(value as PublicationStatus)}>
-                  <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(["запланировано", "в работе", "готово", "опубликовано"] as PublicationStatus[]).map(status => (
-                      <SelectItem key={status} value={status}>{STATUS_LABELS[status]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button size="sm" onClick={applyBulkStatus}>Применить статус</Button>
-              <div className="space-y-1">
-                <Label className="text-xs">Дата</Label>
-                <Input type="date" className="h-9 w-40" value={bulkDate} onChange={e => setBulkDate(e.target.value)} />
-              </div>
-              <Button size="sm" variant="outline" onClick={applyBulkDate}>Перенести дату</Button>
-              <Button size="sm" variant="destructive" onClick={deleteBulk}>Удалить</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {view !== "list" && (
         <Card className="overflow-hidden border-border/80 shadow-sm">
           <CardContent className="p-0">
@@ -652,7 +568,6 @@ export default function ContentPlan() {
                         <DateBadge date={entryDate} inverted />
                         <div>
                           <p className="text-sm font-semibold">{CHECKPOINT_LABELS[checkpoint.type]}</p>
-                          <p className="text-xs opacity-85">{CHECKPOINT_HINTS[checkpoint.type]}</p>
                         </div>
                       </div>
                       <div className="flex gap-1">
@@ -688,7 +603,6 @@ export default function ContentPlan() {
 
             const publication = entry.data;
             const platform = state.platforms.find(item => item.id === publication.platformId);
-            const selected = selectedPubIds.includes(publication.id);
 
             return (
               <motion.div key={publication.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.03 }}>
@@ -706,13 +620,6 @@ export default function ContentPlan() {
                 >
                   <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="hidden sm:block" onClick={event => event.stopPropagation()}>
-                        <Checkbox
-                          checked={selected}
-                          onCheckedChange={value => togglePublicationSelection(publication.id, value === true)}
-                          aria-label="Выбрать публикацию"
-                        />
-                      </div>
                       <div className="flex min-w-0 items-center gap-4">
                         <DateBadge date={entryDate} />
                         <div className="min-w-0">
@@ -748,7 +655,7 @@ export default function ContentPlan() {
                         className="hidden h-9 w-9 sm:inline-flex"
                         onClick={event => {
                           event.stopPropagation();
-                          openEditPub(publication);
+                          openPublicationTarget(publication);
                         }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -783,16 +690,6 @@ export default function ContentPlan() {
         templates={state.templates}
       />
       <CheckpointDialog open={checkpointDialogOpen} onClose={() => setCheckpointDialogOpen(false)} checkpoint={editCheckpoint} />
-      <PublicationDetailSheet
-        publication={detailPub}
-        platforms={state.platforms}
-        ideas={state.ideas}
-        onClose={() => setDetailPubId(null)}
-        onEdit={publication => {
-          setDetailPubId(null);
-          openEditPub(publication);
-        }}
-      />
 
       <AlertDialog open={!!deletePubId} onOpenChange={() => setDeletePubId(null)}>
         <AlertDialogContent>

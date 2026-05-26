@@ -8,7 +8,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Target, Database, Lightbulb, CalendarDays,
-  UserCircle, Settings, Sun, Moon, Download,
+  UserCircle, Settings, Sun, Moon, Download, Bot,
   ChevronRight, ChevronUp, LogOut,
 } from "lucide-react";
 import { AppLogo } from "@/components/app/logo";
@@ -19,7 +19,10 @@ const mainNav = [
   { name: "Идеи", href: "/ideas", icon: Lightbulb },
   { name: "Контент-план", href: "/content-plan", icon: CalendarDays },
   { name: "База", href: "/base", icon: Database, aliases: ["/platforms", "/templates"] },
+  { name: "AI Producer", href: "/ai-producer", icon: Bot },
 ];
+
+const mobileBottomNav = mainNav.filter(item => item.href !== "/ai-producer");
 
 function exportData(state: object) {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -252,6 +255,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     ? profileName.trim().split(/\s+/).map((word: string) => word[0]).join("").toUpperCase().slice(0, 2)
     : "IN";
   const avatarUrl = state.profile?.avatarUrl;
+  const isAiProducerActive = location === "/ai-producer" || location.startsWith("/ai-producer/");
+  const isSettingsActive = location === "/settings";
 
   const isActiveRoute = (item: typeof mainNav[number]) => item.href === "/"
     ? location === "/"
@@ -271,32 +276,53 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       {/* ── Right side: mobile topbar + content ── */}
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 
-        {/* Mobile top bar */}
-        <header className="glass-card md:hidden flex items-center justify-between gap-3 px-4 h-14 rounded-none border-x-0 border-t-0 sticky top-0 z-30 shrink-0">
-          <Link href="/" className="flex items-center gap-2">
-            <AppLogo size="sm" unlinked />
-            <span className="font-bold text-sm tracking-tight">Influera</span>
+        {/* Mobile top controls */}
+        <header className="sticky top-0 z-30 grid grid-cols-[3.25rem_minmax(0,1fr)_3.25rem] items-center gap-3 bg-transparent px-4 pb-2 pt-3 md:hidden">
+          <Link
+            href="/profile"
+            aria-label="Профиль"
+            className="flex h-[3.25rem] w-[3.25rem] items-center justify-center overflow-hidden rounded-full bg-white/[0.045] p-1.5 shadow-[0_14px_34px_hsl(0_0%_0%/.12)] transition-all hover:bg-white/[0.07]"
+          >
+            <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-full w-full rounded-full" />
           </Link>
-          <div className="flex items-center gap-2">
+
+          <div className="mx-auto grid h-14 w-full max-w-[18rem] grid-cols-2 rounded-[1.75rem] bg-white/[0.045] p-1.5 shadow-[0_18px_46px_hsl(0_0%_0%/.12)]">
             <Link
-              href="/settings"
-              aria-label="Настройки"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/80 bg-background/60 text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+              href="/"
+              aria-label="Influera"
+              className={cn(
+                "flex items-center justify-center rounded-[1.35rem] transition-all",
+                !isAiProducerActive
+                  ? "bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)]"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
             >
-              <Settings className="h-5 w-5" />
+              <AppLogo size="sm" unlinked className={cn(!isAiProducerActive && "brightness-0")} />
             </Link>
             <Link
-              href="/profile"
-              aria-label="Профиль"
-              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-primary/25 bg-primary text-primary-foreground shadow-[0_0_24px_hsl(var(--primary)/0.24)] transition-opacity hover:opacity-90"
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <span className="select-none text-xs font-bold">{initials}</span>
+              href="/ai-producer"
+              aria-label="AI Producer"
+              className={cn(
+                "flex items-center justify-center rounded-[1.35rem] transition-all",
+                isAiProducerActive
+                  ? "bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)]"
+                  : "text-muted-foreground hover:text-foreground",
               )}
+            >
+              <Bot className="h-6 w-6" />
             </Link>
           </div>
+
+          <Link
+            href="/settings"
+            aria-label="Настройки"
+            className={cn(
+              "flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-[1.35rem] bg-white/[0.045] shadow-[0_14px_34px_hsl(0_0%_0%/.12)] transition-all hover:bg-white/[0.07]",
+              isSettingsActive && "bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)] hover:bg-primary",
+            )}
+          >
+            <Settings className="h-5 w-5" />
+          </Link>
         </header>
 
         {/* Page content */}
@@ -308,7 +334,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
         <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:hidden">
           <div className="mx-auto grid w-full max-w-md grid-cols-5 gap-1 rounded-3xl border border-border/80 bg-card/92 p-1.5 shadow-2xl backdrop-blur-xl">
-            {mainNav.map(item => {
+            {mobileBottomNav.map(item => {
               const Icon = item.icon;
               const active = isActiveRoute(item);
               const label = item.name === "Контент-план" ? "План" : item.name;

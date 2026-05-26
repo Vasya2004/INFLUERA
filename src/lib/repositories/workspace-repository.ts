@@ -14,6 +14,7 @@ import {
   mapProfile,
   mapProfileForDb,
   mapPublication,
+  mapPublicationFiles,
   mapPublicationForDb,
   mapReference,
   mapReferenceForDb,
@@ -29,6 +30,7 @@ import type {
   PlatformMetricRow,
   PlatformRow,
   ProfileRow,
+  PublicationFileRow,
   PublicationRow,
   TemplateFileRow,
   TemplateRow,
@@ -85,6 +87,7 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
     goalsResult,
     ideasResult,
     publicationsResult,
+    publicationFilesResult,
     channelsResult,
     checkpointsResult,
     templatesResult,
@@ -96,6 +99,7 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
     client.from("goals").select("*").eq("user_id", userId).order("created_at", { ascending: true }),
     client.from("ideas").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
     client.from("publications").select("*").eq("user_id", userId).order("publication_date", { ascending: true }),
+    client.from("publication_files").select("*").eq("user_id", userId),
     client.from("publication_channels").select("*").eq("user_id", userId),
     client.from("checkpoints").select("*").eq("user_id", userId).order("checkpoint_date", { ascending: true }),
     client.from("templates").select("*").eq("user_id", userId).order("created_at", { ascending: true }),
@@ -109,6 +113,7 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
     goalsResult,
     ideasResult,
     publicationsResult,
+    publicationFilesResult,
     channelsResult,
     checkpointsResult,
     templatesResult,
@@ -149,6 +154,7 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
     }
   }
 
+  const filesByPublication = mapPublicationFiles((publicationFilesResult.data ?? []) as PublicationFileRow[]);
   const filesByTemplate = mapTemplateFiles((templateFilesResult.data ?? []) as TemplateFileRow[]);
   const platforms = await Promise.all((platformsResult.data ?? []).map(row => mapPlatform(row as PlatformRow)));
 
@@ -158,9 +164,10 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
     platformMetrics: (platformMetricsResult.data ?? []).map(row => mapPlatformMetric(row as PlatformMetricRow)),
     goals: (goalsResult.data ?? []).map(row => mapGoal(row as GoalRow)),
     ideas: (ideasResult.data ?? []).map(row => mapIdea(row as IdeaRow)),
-    publications: (publicationsResult.data ?? []).map(row =>
-      mapPublication(row as PublicationRow, channelsByPublication.get(row.id) ?? ""),
-    ),
+    publications: (publicationsResult.data ?? []).map(row => ({
+      ...mapPublication(row as PublicationRow, channelsByPublication.get(row.id) ?? ""),
+      files: filesByPublication.get(row.id) ?? [],
+    })),
     checkpoints: (checkpointsResult.data ?? []).map(row => mapCheckpoint(row as CheckpointRow)),
     templates: (templatesResult.data ?? []).map(row =>
       mapTemplate(row as TemplateRow, filesByTemplate.get(row.id) ?? []),

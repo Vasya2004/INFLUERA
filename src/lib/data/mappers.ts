@@ -22,6 +22,7 @@ import type {
   PlatformMetricRow,
   PlatformRow,
   ProfileRow,
+  PublicationFileRow,
   PublicationRow,
   TemplateFileRow,
   TemplateRow,
@@ -241,6 +242,10 @@ export function mapPublication(row: PublicationRow, platformId: string): Publica
     hook: checklistData.hook,
     caption: checklistData.caption,
     cta: checklistData.cta,
+    script: checklistData.script,
+    storyboard: checklistData.storyboard,
+    scriptMode: checklistData.scriptMode,
+    scriptRows: checklistData.scriptRows,
     templateId: checklistData.templateId,
     checklist: checklistData.items,
   };
@@ -361,6 +366,24 @@ export function mapTemplateFiles(rows: TemplateFileRow[]): Map<string, NonNullab
     filesByTemplate.set(row.template_id, files);
   }
   return filesByTemplate;
+}
+
+export function mapPublicationFiles(rows: PublicationFileRow[]): Map<string, NonNullable<Publication["files"]>> {
+  const filesByPublication = new Map<string, NonNullable<Publication["files"]>>();
+  for (const row of rows) {
+    const files = filesByPublication.get(row.publication_id) ?? [];
+    files.push({
+      id: row.id,
+      name: row.original_name,
+      storagePath: row.storage_path,
+      url: row.storage_path,
+      mimeType: row.mime_type ?? undefined,
+      sizeBytes: row.size_bytes ?? undefined,
+      bucket: "publication-files",
+    });
+    filesByPublication.set(row.publication_id, files);
+  }
+  return filesByPublication;
 }
 
 async function resolveStorageUrl(bucket: string, path: string | null): Promise<string | undefined> {
