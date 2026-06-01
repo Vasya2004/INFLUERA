@@ -16,7 +16,7 @@ describe("primary goal helpers", () => {
     ];
 
     expect(syncAudienceGoals(platforms, goals)).toEqual([
-      { ...goals[0], currentValue: 400, targetValue: 2000 },
+      { ...goals[0], currentValue: 400, targetValue: 1 },
       { ...goals[1], currentValue: 100, targetValue: 500 },
       goals[2],
       {

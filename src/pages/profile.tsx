@@ -80,7 +80,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="max-w-5xl space-y-8">
       <PageHeader
         title="Профиль блога"
         action={

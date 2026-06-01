@@ -294,15 +294,15 @@ export function buildCalendarDays(cursor: Date, view: "month" | "week"): Date[] 
   return days;
 }
 
-export function isViewingCurrentPeriod(cursor: Date, view: "month" | "week", now = new Date()) {
-  if (view === "month") {
+export function isViewingCurrentPeriod(cursor: Date, view: "month" | "week" | "list", now = new Date()) {
+  if (view === "month" || view === "list") {
     return cursor.getMonth() === now.getMonth() && cursor.getFullYear() === now.getFullYear();
   }
   return toDateKey(startOfWeekMonday(cursor)) === toDateKey(startOfWeekMonday(now));
 }
 
 export function formatPlanPeriodLabel(cursor: Date, view: "month" | "week" | "list") {
-  if (view === "list") return "Все даты";
+  if (view === "list") return cursor.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
   if (view === "week") {
     const start = startOfWeekMonday(cursor);
     const end = addDays(start, 6);

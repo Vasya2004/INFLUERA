@@ -120,6 +120,7 @@ type StoreContextType = {
   upsertPlatformMetric: (metric: PlatformMetric) => void;
   removePlatformMetric: (metricId: string) => void;
   setAudienceTotal: (total: number) => void;
+  setAudienceTarget: (target: number) => void;
   deletePlatform: (id: string) => void;
   addGoal: (g: Omit<Goal, "id">) => void;
   updateGoal: (g: Goal) => void;
@@ -147,6 +148,7 @@ type StoreContextType = {
 };
 
 const StoreContext = createContext<StoreContextType | null>(null);
+const RESUME_REFRESH_INTERVAL_MS = 15_000;
 
 function genId() {
   return Math.random().toString(36).slice(2, 9);
@@ -185,7 +187,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(() => readLocalState() ?? createDemoAppState());
   const hydratedUserRef = useRef<string | null>(null);
   const cloudSyncRef = useRef<ReturnType<typeof createCloudSync> | null>(null);
+  const lastResumeRefreshRef = useRef(0);
+  const resumeRefreshInFlightRef = useRef(false);
+  const syncStatusRef = useRef<SyncStatus>("idle");
   const workspaceCache = useWorkspaceCache(user?.id);
+
+  useEffect(() => {
+    syncStatusRef.current = syncStatus;
+  }, [syncStatus]);
 
   useEffect(() => {
     cloudSyncRef.current = cloudEnabled && user ? createCloudSync(user.id) : null;
@@ -298,6 +307,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, [cloudEnabled, user]);
 
+  useEffect(() => {
+    if (!cloudEnabled || !user || !ready) return;
+
+    let cancelled = false;
+
+    const refreshWorkspace = async (force = false) => {
+      if (cancelled) return;
+      if (document.visibilityState !== "visible") return;
+      if (resumeRefreshInFlightRef.current) return;
+      if (syncStatusRef.current === "saving") return;
+
+      const now = Date.now();
+      if (!force && now - lastResumeRefreshRef.current < RESUME_REFRESH_INTERVAL_MS) return;
+
+      resumeRefreshInFlightRef.current = true;
+      lastResumeRefreshRef.current = now;
+
+      try {
+        const remote = await loadWorkspace(user.id);
+        if (!remote || cancelled || (syncStatusRef.current as SyncStatus) === "saving") return;
+
+        const normalized = withLocalProfileAssets(normalizeState(remote));
+        setState(normalized);
+        workspaceCache.setWorkspace(normalized);
+        localStorage.setItem(STORE_KEY, JSON.stringify(normalized));
+        setSyncStatus("saved");
+      } catch {
+        // Keep the local snapshot when refresh fails.
+      } finally {
+        resumeRefreshInFlightRef.current = false;
+      }
+    };
+
+    const handleResume = () => void refreshWorkspace();
+    const handleOnline = () => void refreshWorkspace(true);
+
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("focus", handleResume);
+    window.addEventListener("pageshow", handleResume);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("focus", handleResume);
+      window.removeEventListener("pageshow", handleResume);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [cloudEnabled, ready, user?.id, workspaceCache]);
+
   const addPlatform = (p: Omit<Platform, "id">) => {
     const platform = { ...p, id: genId() };
     applyUpdate(
@@ -401,6 +460,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     applyUpdate(
       s => withSyncedPlatforms(s, distributeAudienceTotal(s.platforms, total)),
       next => () => cloudSyncRef.current!.savePlatforms(next.platforms),
+    );
+
+  const setAudienceTarget = (target: number) =>
+    applyUpdate(
+      s => {
+        const primary = s.goals.find(goal => goal.isPrimary);
+        if (!primary) return s;
+        const nextGoal = { ...primary, targetValue: Math.max(1, Math.round(target)) };
+        return {
+          ...s,
+          goals: s.goals.map(goal => goal.id === primary.id ? nextGoal : goal),
+        };
+      },
+      next => {
+        const primary = next.goals.find(goal => goal.isPrimary);
+        return primary ? () => cloudSyncRef.current!.saveGoal(primary) : undefined;
+      },
     );
 
   const deletePlatform = (id: string) =>
@@ -672,6 +748,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         upsertPlatformMetric: () => {},
         removePlatformMetric: () => {},
         setAudienceTotal: () => {},
+        setAudienceTarget: () => {},
         deletePlatform: () => {},
         addGoal: () => {},
         updateGoal: () => {},
@@ -710,7 +787,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       completeOnboarding,
       applyDemoSeed,
       demoSeedApplied,
-      addPlatform, updatePlatform, updatePlatformSubscribers, upsertPlatformMetric, removePlatformMetric, setAudienceTotal, deletePlatform,
+      addPlatform, updatePlatform, updatePlatformSubscribers, upsertPlatformMetric, removePlatformMetric, setAudienceTotal, setAudienceTarget, deletePlatform,
       addGoal, updateGoal, deleteGoal,
       addIdea, updateIdea, deleteIdea,
       addPublication, updatePublication, deletePublication,

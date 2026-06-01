@@ -23,7 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-const PLATFORM_NAMES = ["Telegram", "Instagram", "YouTube", "TikTok", "VK", "Threads", "X", "Rutube", "LinkedIn", "Другое"];
+const PLATFORM_NAMES = ["Telegram", "Instagram", "YouTube", "TikTok", "VK", "Threads", "X", "Rutube", "LinkedIn", "MAX", "Другое"];
 
 const DEFAULT_ACCENT: Record<string, string> = {
   Telegram: "#0088cc",
@@ -35,6 +35,7 @@ const DEFAULT_ACCENT: Record<string, string> = {
   X: "#000000",
   LinkedIn: "#0077B5",
   Rutube: "#FF3A44",
+  MAX: "#0057FF",
   Другое: "#6366f1",
 };
 
@@ -388,7 +389,7 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
       username,
       url: form.url.trim() || `https://${form.name.toLowerCase()}.com/${username.replace("@", "")}`,
       subscribers: Number(form.subscribers) || 0,
-      targetSubscribers: form.goalEnabled ? Number(form.targetSubscribers) || 1000 : 0,
+      targetSubscribers: isMain && form.goalEnabled ? Number(form.targetSubscribers) || 1000 : 0,
       role: form.role,
       weeklyPlan: Number(form.weeklyPlan) || 1,
       accentColor: form.accentColor,
@@ -439,10 +440,12 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
                 <Select
                   value={form.role}
                   onValueChange={(v) => {
+                    const nextRole = v as PlatformRole;
                     setForm(f => ({
                       ...f,
-                      role: v as PlatformRole,
-                      mirrorPlatformIds: v === "основная площадка" ? f.mirrorPlatformIds : [],
+                      role: nextRole,
+                      goalEnabled: nextRole === "основная площадка" ? f.goalEnabled : false,
+                      mirrorPlatformIds: nextRole === "основная площадка" ? f.mirrorPlatformIds : [],
                     }));
                   }}
                 >
@@ -494,12 +497,12 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
             <Input placeholder="https://t.me/myblog" value={form.url} onChange={(e) => set("url", e.target.value)} />
           </div>
 
-          <div className={cn("grid gap-3", form.goalEnabled ? "grid-cols-2" : "grid-cols-1")}>
+          <div className={cn("grid gap-3", isMain && form.goalEnabled ? "grid-cols-2" : "grid-cols-1")}>
             <div className="space-y-1.5">
               <Label>Подписчиков сейчас</Label>
               <Input type="number" min="0" value={form.subscribers} onChange={(e) => set("subscribers", e.target.value)} />
             </div>
-            {form.goalEnabled && (
+            {isMain && form.goalEnabled && (
               <div className="space-y-1.5">
                 <Label>Цель по подписчикам</Label>
                 <Input type="number" min="1" value={form.targetSubscribers} onChange={(e) => set("targetSubscribers", e.target.value)} />
@@ -507,19 +510,21 @@ function PlatformDialog({ open, onClose, platform, allPlatforms }: {
             )}
           </div>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/70 bg-muted/20 p-3 transition-colors hover:bg-muted/35">
-            <Checkbox
-              checked={form.goalEnabled}
-              onCheckedChange={checked => setBoolean("goalEnabled", checked === true)}
-              className="mt-0.5"
-            />
-            <span className="space-y-1">
-              <span className="block text-sm font-medium text-foreground">Добавить цель по подписчикам</span>
-              <span className="block text-xs leading-relaxed text-muted-foreground">
-                Если включено, цель появится на странице «Цели» и будет учитываться в общей аудитории.
+          {isMain && (
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/70 bg-muted/20 p-3 transition-colors hover:bg-muted/35">
+              <Checkbox
+                checked={form.goalEnabled}
+                onCheckedChange={checked => setBoolean("goalEnabled", checked === true)}
+                className="mt-0.5"
+              />
+              <span className="space-y-1">
+                <span className="block text-sm font-medium text-foreground">Добавить цель по подписчикам</span>
+                <span className="block text-xs leading-relaxed text-muted-foreground">
+                  Если включено, цель появится на странице «Цели» и будет учитываться в общей аудитории.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+          )}
 
           <div className="space-y-1.5">
             <Label>Публикаций в неделю</Label>

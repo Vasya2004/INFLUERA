@@ -73,7 +73,7 @@ function RootRouter() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="influera-theme">
+      <ThemeProvider defaultTheme="system" storageKey="influera-theme">
         <AuthProvider>
           <StoreProvider>
             <TooltipProvider>

@@ -26,7 +26,7 @@ describe("platform-metrics-utils", () => {
   });
 
   it("calculates growth for a period", () => {
-    const growth = calculateMetricGrowth(metrics, 30);
+    const growth = calculateMetricGrowth(metrics, 30, new Date("2026-05-23T12:00:00.000Z"));
     expect(growth.start).toBe(100);
     expect(growth.end).toBe(180);
     expect(growth.delta).toBe(80);

@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { AppLogo } from "@/components/app/logo";
 
-const PLATFORM_OPTIONS = ["Telegram", "Instagram", "YouTube", "TikTok", "VK", "Threads", "X", "Rutube", "LinkedIn", "Другое"];
+const PLATFORM_OPTIONS = ["Telegram", "Instagram", "YouTube", "TikTok", "VK", "Threads", "X", "Rutube", "LinkedIn", "MAX", "Другое"];
 const PRIORITIES: Priority[] = ["высокий", "средний", "низкий"];
 const STATUSES: PublicationStatus[] = ["запланировано", "в работе", "готово"];
 

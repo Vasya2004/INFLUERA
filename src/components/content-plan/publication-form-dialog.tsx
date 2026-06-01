@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import type { ContentFormat, Idea, Platform, Publication, PublicationStatus, Template } from "@/lib/types";
 import {
   CONTENT_FORMATS,
@@ -34,10 +35,14 @@ export function PublicationFormDialog({
   templates,
 }: PublicationFormDialogProps) {
   const { addPublication, updatePublication } = useStore();
+  const mainPlatforms = useMemo(
+    () => platforms.filter(platform => platform.role === "основная площадка"),
+    [platforms],
+  );
   const [form, setForm] = useState({
     title: "",
     date: new Date().toISOString().slice(0, 10),
-    platformId: platforms[0]?.id ?? "",
+    platformId: mainPlatforms[0]?.id ?? "",
     format: "пост" as ContentFormat,
     status: "запланировано" as PublicationStatus,
     ideaId: "none",
@@ -56,7 +61,9 @@ export function PublicationFormDialog({
       date: pub?.date
         ? pub.date.slice(0, 10)
         : initialDate ?? new Date().toISOString().slice(0, 10),
-      platformId: pub?.platformId ?? platforms[0]?.id ?? "",
+      platformId: pub?.platformId && mainPlatforms.some(platform => platform.id === pub.platformId)
+        ? pub.platformId
+        : mainPlatforms[0]?.id ?? "",
       format: (pub?.format ?? "пост") as ContentFormat,
       status: (pub?.status ?? "запланировано") as PublicationStatus,
       ideaId: pub?.ideaId ?? "none",
@@ -67,7 +74,7 @@ export function PublicationFormDialog({
       cta: pub?.cta ?? "",
       templateId: pub?.templateId ?? "none",
     });
-  }, [open, pub, initialDate, platforms]);
+  }, [open, pub, initialDate, mainPlatforms]);
 
   const set = (key: string, value: string) => setForm(current => ({ ...current, [key]: value }));
 
@@ -119,7 +126,7 @@ export function PublicationFormDialog({
               <Select value={form.platformId} onValueChange={value => set("platformId", value)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {platforms.map(platform => (
+                  {mainPlatforms.map(platform => (
                     <SelectItem key={platform.id} value={platform.id}>{platform.name}</SelectItem>
                   ))}
                 </SelectContent>

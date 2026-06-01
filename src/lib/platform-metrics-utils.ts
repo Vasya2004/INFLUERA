@@ -59,8 +59,8 @@ export function buildMetricChartSeries(metrics: PlatformMetric[], periodDays: Me
   }));
 }
 
-export function calculateMetricGrowth(metrics: PlatformMetric[], periodDays: MetricPeriodDays): MetricGrowthSummary {
-  const filtered = filterMetricsByPeriod(metrics, periodDays);
+export function calculateMetricGrowth(metrics: PlatformMetric[], periodDays: MetricPeriodDays, now = new Date()): MetricGrowthSummary {
+  const filtered = filterMetricsByPeriod(metrics, periodDays, now);
   if (filtered.length === 0) {
     return { start: 0, end: 0, delta: 0, percent: 0 };
   }

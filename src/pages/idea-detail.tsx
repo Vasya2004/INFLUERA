@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Archive, ArrowLeft, CalendarPlus, ExternalLink, FileText, Lightbulb, Plus, Save, Trash2 } from "lucide-react";
+import { PlatformAvatar } from "@/components/app/platform-avatar";
 
 const PRIORITIES: Priority[] = ["высокий", "средний", "низкий"];
 
@@ -63,6 +64,10 @@ export default function IdeaDetail() {
     () => idea ? getPublicationsForIdea(state.publications, idea.id) : [],
     [idea, state.publications],
   );
+  const mainPlatforms = useMemo(
+    () => state.platforms.filter(item => item.role === "основная площадка"),
+    [state.platforms],
+  );
   const [planOpen, setPlanOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [form, setForm] = useState({
@@ -93,10 +98,10 @@ export default function IdeaDetail() {
       format: idea.format,
       priority: idea.priority,
       status: idea.status,
-      platformId: idea.platformId ?? "any",
+      platformId: idea.platformId && mainPlatforms.some(item => item.id === idea.platformId) ? idea.platformId : "any",
       tags: formatTagsInput(idea.tags),
     });
-  }, [idea]);
+  }, [idea, mainPlatforms]);
 
   if (!idea) {
     return (
@@ -324,7 +329,7 @@ export default function IdeaDetail() {
                     <SelectTrigger><SelectValue placeholder="Любая" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="any">Любая</SelectItem>
-                      {state.platforms.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                      {mainPlatforms.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -468,7 +473,12 @@ export default function IdeaDetail() {
                 <Badge>{IDEA_STATUS_LABELS[form.status]}</Badge>
                 <Badge variant="outline">{form.priority}</Badge>
                 <Badge variant="outline">{form.format}</Badge>
-                {platform && <Badge variant="secondary">{platform.name}</Badge>}
+                {platform && (
+                  <Badge variant="secondary" className="gap-1.5">
+                    <PlatformAvatar platform={platform} size="xs" />
+                    {platform.name}
+                  </Badge>
+                )}
               </div>
               <p className="text-muted-foreground">
                 Создана {new Date(currentIdea.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
@@ -502,7 +512,12 @@ export default function IdeaDetail() {
                     <p className="text-sm font-semibold">{publication.title}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <Badge variant="secondary">{STATUS_LABELS[publication.status]}</Badge>
-                      {publicationPlatform && <Badge variant="outline">{publicationPlatform.name}</Badge>}
+                      {publicationPlatform && (
+                        <Badge variant="outline" className="gap-1.5">
+                          <PlatformAvatar platform={publicationPlatform} size="xs" />
+                          {publicationPlatform.name}
+                        </Badge>
+                      )}
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       {new Date(publication.date).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" })}
@@ -518,7 +533,7 @@ export default function IdeaDetail() {
       <PlanFromIdeaDialog
         open={planOpen}
         idea={{ ...currentIdea, ...form, platformId: form.platformId === "any" ? undefined : form.platformId, tags: parseTagsInput(form.tags) }}
-        platforms={state.platforms}
+        platforms={mainPlatforms}
         onClose={() => setPlanOpen(false)}
         onConfirm={confirmPlanIdea}
       />

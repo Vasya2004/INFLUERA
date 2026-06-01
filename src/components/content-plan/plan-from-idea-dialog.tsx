@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ContentFormat, Idea, Platform, PublicationStatus } from "@/lib/types";
 import { CONTENT_FORMATS, DEFAULT_PUBLICATION_CHECKLIST, PUBLICATION_STATUSES, STATUS_LABELS } from "@/lib/content-plan-utils";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { PlatformAvatar } from "@/components/app/platform-avatar";
 
 type PlanFromIdeaDialogProps = {
   open: boolean;
@@ -24,10 +25,14 @@ type PlanFromIdeaDialogProps = {
 };
 
 export function PlanFromIdeaDialog({ open, idea, platforms, onClose, onConfirm }: PlanFromIdeaDialogProps) {
+  const mainPlatforms = useMemo(
+    () => platforms.filter(platform => platform.role === "основная площадка"),
+    [platforms],
+  );
   const [form, setForm] = useState({
     title: "",
     date: new Date().toISOString().slice(0, 10),
-    platformId: platforms[0]?.id ?? "",
+    platformId: mainPlatforms[0]?.id ?? "",
     format: "пост" as ContentFormat,
     status: "запланировано" as PublicationStatus,
   });
@@ -40,11 +45,13 @@ export function PlanFromIdeaDialog({ open, idea, platforms, onClose, onConfirm }
     setForm({
       title: idea.title,
       date: defaultDate.toISOString().slice(0, 10),
-      platformId: idea.platformId ?? platforms[0]?.id ?? "",
+      platformId: idea.platformId && mainPlatforms.some(platform => platform.id === idea.platformId)
+        ? idea.platformId
+        : mainPlatforms[0]?.id ?? "",
       format: idea.format,
       status: "запланировано",
     });
-  }, [open, idea, platforms]);
+  }, [open, idea, mainPlatforms]);
 
   if (!idea) return null;
 
@@ -61,7 +68,7 @@ export function PlanFromIdeaDialog({ open, idea, platforms, onClose, onConfirm }
     onClose();
   }
 
-  const platform = platforms.find(item => item.id === form.platformId);
+  const platform = mainPlatforms.find(item => item.id === form.platformId);
 
   return (
     <Dialog open={open} onOpenChange={value => { if (!value) onClose(); }}>
@@ -77,7 +84,12 @@ export function PlanFromIdeaDialog({ open, idea, platforms, onClose, onConfirm }
             <p className="text-xs text-muted-foreground">Превью</p>
             <p className="mt-1 text-sm font-semibold">{form.title}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {platform && <Badge variant="secondary">{platform.name}</Badge>}
+              {platform && (
+                <Badge variant="secondary" className="gap-1.5">
+                  <PlatformAvatar platform={platform} size="xs" />
+                  {platform.name}
+                </Badge>
+              )}
               <Badge variant="outline">{form.format}</Badge>
               <Badge variant="outline">{STATUS_LABELS[form.status]}</Badge>
             </div>
@@ -103,7 +115,7 @@ export function PlanFromIdeaDialog({ open, idea, platforms, onClose, onConfirm }
               <Select value={form.platformId} onValueChange={value => setForm(current => ({ ...current, platformId: value }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {platforms.map(item => (
+                  {mainPlatforms.map(item => (
                     <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
                   ))}
                 </SelectContent>

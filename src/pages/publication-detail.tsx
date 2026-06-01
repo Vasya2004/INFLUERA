@@ -32,6 +32,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, CalendarDays, ExternalLink, FileText, Lightbulb, Plus, Save, Trash2 } from "lucide-react";
+import { PlatformAvatar } from "@/components/app/platform-avatar";
 
 function toDateInputValue(date: string) {
   return date.slice(0, 10);
@@ -93,13 +94,19 @@ export default function PublicationDetail() {
     () => publication ? ensurePublicationChecklist(publication) : undefined,
     [publication],
   );
+  const mainPlatforms = useMemo(
+    () => state.platforms.filter(item => item.role === "основная площадка"),
+    [state.platforms],
+  );
 
   useEffect(() => {
     if (!enrichedPublication) return;
     setForm({
       title: enrichedPublication.title,
       date: toDateInputValue(enrichedPublication.date),
-      platformId: enrichedPublication.platformId,
+      platformId: mainPlatforms.some(item => item.id === enrichedPublication.platformId)
+        ? enrichedPublication.platformId
+        : mainPlatforms[0]?.id ?? "",
       format: enrichedPublication.format,
       status: enrichedPublication.status,
       ideaId: enrichedPublication.ideaId ?? "none",
@@ -118,7 +125,7 @@ export default function PublicationDetail() {
       templateId: enrichedPublication.templateId ?? "none",
       checklist: (enrichedPublication.checklist ?? DEFAULT_PUBLICATION_CHECKLIST).map(item => ({ ...item })),
     });
-  }, [enrichedPublication]);
+  }, [enrichedPublication, mainPlatforms]);
 
   if (!publication || !enrichedPublication) {
     return (
@@ -287,7 +294,7 @@ export default function PublicationDetail() {
                   <Select value={form.platformId} onValueChange={value => set("platformId", value)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {state.platforms.map(item => (
+                      {mainPlatforms.map(item => (
                         <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -482,7 +489,12 @@ export default function PublicationDetail() {
                   {STATUS_LABELS[form.status]}
                 </span>
                 <Badge variant="outline">{form.format}</Badge>
-                {platform && <Badge variant="secondary">{platform.name}</Badge>}
+                {platform && (
+                  <Badge variant="secondary" className="gap-1.5">
+                    <PlatformAvatar platform={platform} size="xs" />
+                    {platform.name}
+                  </Badge>
+                )}
                 <Badge variant="outline">{form.scriptMode === "post" ? "Пост" : "Видео"}</Badge>
                 {overdue && <Badge variant="destructive">Просрочено</Badge>}
               </div>

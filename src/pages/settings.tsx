@@ -1,17 +1,22 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/components/theme-provider";
 import { motion } from "framer-motion";
-import { Download, Sun, Moon, Database } from "lucide-react";
+import { Download, Sun, Moon, Database, Monitor } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/app/page";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const THEME_OPTIONS = [
+  { value: "system", label: "Как в системе", icon: Monitor },
+  { value: "light", label: "Светлая", icon: Sun },
+  { value: "dark", label: "Тёмная", icon: Moon },
+] as const;
 
 export default function Settings() {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const {
     exportData,
     state,
@@ -27,7 +32,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="max-w-5xl space-y-8">
       <PageHeader title="Настройки" />
 
       <div className="space-y-4">
@@ -35,22 +40,34 @@ export default function Settings() {
           <Card>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
-                {theme === "dark" ? <Moon className="h-4 w-4 text-muted-foreground" /> : <Sun className="h-4 w-4 text-muted-foreground" />}
+                {resolvedTheme === "dark" ? <Moon className="h-4 w-4 text-muted-foreground" /> : <Sun className="h-4 w-4 text-muted-foreground" />}
                 <CardTitle className="text-base">Внешний вид</CardTitle>
               </div>
               <CardDescription>Настройте отображение интерфейса</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Тёмная тема</Label>
-                  <p className="text-xs text-muted-foreground">Переключить на тёмное оформление</p>
-                </div>
-                <Switch
-                  checked={theme === "dark"}
-                  onCheckedChange={checked => setTheme(checked ? "dark" : "light")}
-                  data-testid="switch-dark-mode"
-                />
+              <div className="grid gap-2 sm:grid-cols-3">
+                {THEME_OPTIONS.map(option => {
+                  const Icon = option.icon;
+                  const active = theme === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setTheme(option.value)}
+                      className={cn(
+                        "flex min-h-12 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition-colors",
+                        active
+                          ? "border-primary bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.20)]"
+                          : "border-border/80 bg-background/60 text-muted-foreground hover:border-primary/35 hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {option.label}
+                    </button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

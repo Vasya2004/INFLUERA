@@ -13,6 +13,7 @@ export function getPrimaryGoal(goals: Goal[]): Goal | undefined {
 }
 
 export function getAudienceGoalSummary(platforms: Platform[], goals: Goal[]): Goal {
+  const primary = getPrimaryGoal(goals);
   const platformSubscriberGoals = goals.filter(goal =>
     !goal.isPrimary && goal.type === "подписчики" && Boolean(goal.platformId),
   );
@@ -24,15 +25,20 @@ export function getAudienceGoalSummary(platforms: Platform[], goals: Goal[]): Go
   }
 
   const goalsTarget = [...targetByPlatform.values()].reduce((sum, value) => sum + value, 0);
-  const targetValue = goalsTarget > 0 ? goalsTarget : sumPlatformTargets(platforms);
+  const targetValue = primary?.targetValue && primary.targetValue > 0
+    ? primary.targetValue
+    : goalsTarget > 0
+      ? goalsTarget
+      : sumPlatformTargets(platforms);
 
   return {
-    id: "audience-summary",
-    title: "Общая аудитория",
+    id: primary?.id ?? "audience-summary",
+    title: primary?.title ?? "Общая аудитория",
     type: "подписчики",
     currentValue: sumPlatformSubscribers(platforms),
     targetValue: targetValue || 10_000,
-    deadline: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
+    deadline: primary?.deadline ?? new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
+    isPrimary: primary?.isPrimary,
   };
 }
 
@@ -163,7 +169,7 @@ export function syncAudienceGoals(platforms: Platform[], goals: Goal[]): Goal[] 
       return {
         ...goal,
         currentValue: audienceSummary.currentValue,
-        targetValue: audienceSummary.targetValue > 0 ? audienceSummary.targetValue : goal.targetValue,
+        targetValue: goal.targetValue > 0 ? goal.targetValue : audienceSummary.targetValue,
       };
     }
     return goal;

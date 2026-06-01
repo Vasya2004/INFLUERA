@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { PlatformAvatar } from "@/components/app/platform-avatar";
 
 const statusColors: Record<Idea["status"], string> = {
   "новая": "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300",
@@ -78,7 +79,12 @@ export function IdeaCard({
               {idea.priority}
             </span>
             <Badge variant="outline" className="text-xs font-normal">{idea.format}</Badge>
-            {platform && <Badge variant="secondary" className="text-xs font-normal">{platform.name}</Badge>}
+            {platform && (
+              <Badge variant="secondary" className="gap-1.5 text-xs font-normal">
+                <PlatformAvatar platform={platform} size="xs" />
+                {platform.name}
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>

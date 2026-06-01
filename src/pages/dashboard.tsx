@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { Lightbulb } from "lucide-react";
 import type { IdeaStatus, Platform, PlatformMetric, Priority, Publication } from "@/lib/types";
@@ -7,6 +7,7 @@ import {
   getPlatformGrowthLeaderboard,
   getWeeklyPlanSummary,
 } from "@/lib/platform-metrics-utils";
+import { isIdeaInPlan } from "@/lib/ideas-utils";
 import { PUBLICATION_STATUS_COLORS } from "@/lib/content-plan-utils";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
@@ -16,6 +17,7 @@ import { PlatformAvatar, PlatformBuiltinIcon, platformAccent } from "@/component
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Stat3DIcon, type Stat3DIconType } from "@/components/app/stat-3d-icons";
+import { Input } from "@/components/ui/input";
 
 const ideaStatusColors: Record<IdeaStatus, string> = {
   "новая": "border border-blue-500/25 bg-blue-500/10 text-blue-700 dark:text-blue-300",
@@ -49,6 +51,58 @@ const glassPanelClass = "glass-card text-foreground";
 const glassPanelNestedClass = "glass-card text-foreground";
 const mutedTextClass = "text-muted-foreground";
 const panelActionLinkClass = "inline-flex min-h-10 items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-4 py-2 text-sm font-semibold text-primary shadow-[0_0_24px_hsl(var(--primary)/0.16)] transition-colors hover:border-primary/40 hover:bg-primary/18 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45";
+
+function InlineAudienceTarget({
+  value,
+  onCommit,
+  editing,
+  onEditingChange,
+}: {
+  value: number;
+  onCommit: (value: number) => void;
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+
+  useEffect(() => {
+    if (!editing) setDraft(String(value));
+  }, [editing, value]);
+
+  function commit() {
+    onCommit(Math.max(1, Number.parseInt(draft, 10) || value || 1));
+    onEditingChange(false);
+  }
+
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        type="number"
+        min={1}
+        inputMode="numeric"
+        value={draft}
+        onChange={event => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={event => {
+          if (event.key === "Enter") commit();
+          if (event.key === "Escape") {
+            setDraft(String(value));
+            onEditingChange(false);
+          }
+        }}
+        className="inline-flex h-7 w-28 px-2 text-xs font-semibold tabular-nums"
+        aria-label="Общая цель по подписчикам"
+      />
+    );
+  }
+
+  return (
+    <span className="font-semibold tabular-nums text-foreground">
+      {value.toLocaleString("ru-RU")}
+    </span>
+  );
+}
 
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -203,8 +257,9 @@ function UpcomingPublicationsList({
 }
 
 export default function Dashboard() {
-  const { state } = useStore();
+  const { state, setAudienceTarget } = useStore();
   const [audiencePeriod, setAudiencePeriod] = useState<AudiencePeriod>("month");
+  const [audienceTargetEditing, setAudienceTargetEditing] = useState(false);
 
   const audienceGoal = useMemo(
     () => getAudienceGoalSummary(state.platforms, state.goals),
@@ -236,13 +291,17 @@ export default function Dashboard() {
   const audienceDelta = Math.max(0, audienceEnd - audienceStart);
   const audienceDeltaPct = audienceStart > 0 ? Math.round((audienceDelta / audienceStart) * 100) : 0;
   const activeGoals = state.goals.filter(g => !g.isPrimary && new Date(g.deadline) > new Date());
-  const newIdeas = state.ideas.filter(i => i.status === "новая");
+  const visibleIdeas = state.ideas.filter(idea =>
+    idea.status !== "архив"
+    && idea.status !== "превращена в публикацию"
+    && !isIdeaInPlan(state.publications, idea.id),
+  );
+  const newIdeas = visibleIdeas.filter(i => i.status === "новая");
   const upcomingPubs = state.publications
     .filter(p => p.status !== "опубликовано")
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 4);
-  const dashboardIdeas = state.ideas
-    .filter(i => i.status !== "архив")
+  const dashboardIdeas = visibleIdeas
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 3);
   const dashboardPlatforms = state.platforms.slice(0, 3);
@@ -264,7 +323,7 @@ export default function Dashboard() {
     },
     {
       label: "Банк идей",
-      value: state.ideas.length.toString(),
+      value: visibleIdeas.length.toString(),
       detail: `${newIdeas.length} новых`,
       illustration: "ideas",
       href: "/ideas",
@@ -302,7 +361,16 @@ export default function Dashboard() {
             <div className="relative flex flex-col gap-4">
               <div className="flex flex-col gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Общая аудитория</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-foreground">Общая аудитория</p>
+                    <button
+                      type="button"
+                      onClick={() => setAudienceTargetEditing(true)}
+                      className="inline-flex min-h-8 shrink-0 items-center rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/15"
+                    >
+                      Изменить
+                    </button>
+                  </div>
                   <div className="mt-1.5 flex flex-wrap items-end gap-x-2 gap-y-1">
                     <p className="text-2xl font-bold tracking-tight text-foreground">{audienceCurrent.toLocaleString("ru-RU")}</p>
                     <span className="mb-0.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-200">
@@ -310,7 +378,13 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <p className={`mt-1 text-xs ${mutedTextClass}`}>
-                    {Math.round(subscriberProgress)}% от цели {audienceTarget.toLocaleString("ru-RU")}
+                    {Math.round(subscriberProgress)}% от цели{" "}
+                    <InlineAudienceTarget
+                      value={audienceTarget}
+                      onCommit={setAudienceTarget}
+                      editing={audienceTargetEditing}
+                      onEditingChange={setAudienceTargetEditing}
+                    />
                   </p>
                 </div>
 

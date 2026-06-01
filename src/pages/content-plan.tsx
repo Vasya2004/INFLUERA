@@ -37,6 +37,7 @@ import { Plus, CalendarDays, Pencil, Trash2, ExternalLink, Flag, List, Rows3, Ch
 import { motion } from "framer-motion";
 import { EmptyState, PageHeader } from "@/components/app/page";
 import { cn } from "@/lib/utils";
+import { PlatformAvatar } from "@/components/app/platform-avatar";
 
 type PlanView = "month" | "week" | "list";
 
@@ -141,13 +142,22 @@ function DateBadge({ date, inverted }: { date: Date; inverted?: boolean }) {
   );
 }
 
+function DatePlatformBadges({ date, platform }: { date: Date; platform?: { name: string; iconUrl?: string; accentColor?: string } }) {
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      <DateBadge date={date} />
+      {platform && <PlatformAvatar platform={platform} size="lg" />}
+    </div>
+  );
+}
+
 function isPublishedPublication(publication: Publication) {
   return publication.status === "опубликовано";
 }
 
 function publicationCalendarCardClass(publication: Publication, overdue: boolean) {
   if (isPublishedPublication(publication)) {
-    return "border-emerald-400/45 bg-emerald-500/15 text-emerald-50 shadow-[0_0_24px_hsl(160_84%_39%/0.14)] hover:border-emerald-300/65 hover:bg-emerald-500/20";
+    return "border-emerald-500/45 bg-emerald-500/15 text-emerald-950 shadow-[0_0_24px_hsl(160_84%_39%/0.14)] hover:border-emerald-500/65 hover:bg-emerald-500/20 dark:border-emerald-400/45 dark:text-emerald-50 dark:hover:border-emerald-300/65";
   }
 
   return overdue
@@ -202,6 +212,10 @@ export default function ContentPlan() {
   }, [state.publications, state.checkpoints]);
 
   const filtered = useMemo(() => filterPlanEntries(entries, filters), [entries, filters]);
+  const listEntries = useMemo(
+    () => filtered.filter(entry => isSameMonth(new Date(entry.data.date), cursorDate)),
+    [filtered, cursorDate],
+  );
 
   const calendarDays = useMemo(
     () => (view === "list" ? [] : buildCalendarDays(cursorDate, view)),
@@ -226,7 +240,7 @@ export default function ContentPlan() {
     return map;
   }, [filtered]);
 
-  const showTodayButton = view !== "list" && !isViewingCurrentPeriod(cursorDate, view);
+  const showTodayButton = !isViewingCurrentPeriod(cursorDate, view);
 
   const activeAdvancedFilters = filters.format !== "все"
     || filters.ideaFilter !== "все"
@@ -245,7 +259,7 @@ export default function ContentPlan() {
   }
 
   function shiftPeriod(direction: -1 | 1) {
-    if (view === "month") setCursorDate(current => addMonths(current, direction));
+    if (view === "month" || view === "list") setCursorDate(current => addMonths(current, direction));
     else if (view === "week") setCursorDate(current => addDays(current, direction * 7));
   }
 
@@ -266,50 +280,48 @@ export default function ContentPlan() {
       />
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
-        {view !== "list" && (
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            <div className="flex w-full items-center rounded-xl border border-border/80 bg-background/90 p-1 shadow-sm sm:w-auto">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg"
-                onClick={() => shiftPeriod(-1)}
-                aria-label={view === "month" ? "Предыдущий месяц" : "Предыдущая неделя"}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="min-w-0 flex-1 px-3 text-center sm:min-w-[11rem]">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {view === "month" ? "Месяц" : "Неделя"}
-                </p>
-                <p className="text-sm font-semibold capitalize leading-tight">
-                  {formatPlanPeriodLabel(cursorDate, view)}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg"
-                onClick={() => shiftPeriod(1)}
-                aria-label={view === "month" ? "Следующий месяц" : "Следующая неделя"}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="flex w-full items-center rounded-xl border border-border/80 bg-background/90 p-1 shadow-sm sm:w-auto">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => shiftPeriod(-1)}
+              aria-label={view === "week" ? "Предыдущая неделя" : "Предыдущий месяц"}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0 flex-1 px-3 text-center sm:min-w-[11rem]">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {view === "week" ? "Неделя" : "Месяц"}
+              </p>
+              <p className="text-sm font-semibold capitalize leading-tight">
+                {formatPlanPeriodLabel(cursorDate, view)}
+              </p>
             </div>
-            {showTodayButton && (
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-9 rounded-xl px-3 text-xs"
-                onClick={() => setCursorDate(startOfDay(new Date()))}
-              >
-                Перейти к сегодня
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => shiftPeriod(1)}
+              aria-label={view === "week" ? "Следующая неделя" : "Следующий месяц"}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-        )}
+          {showTodayButton && (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-9 rounded-xl px-3 text-xs"
+              onClick={() => setCursorDate(startOfDay(new Date()))}
+            >
+              Перейти к сегодня
+            </Button>
+          )}
+        </div>
         <div className="grid w-full grid-cols-3 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm sm:flex sm:w-auto">
           {VIEW_OPTIONS.map(option => {
             const Icon = option.icon;
@@ -509,10 +521,13 @@ export default function ContentPlan() {
                               publicationCalendarCardClass(pub, overdue),
                             )}
                           >
-                            <span className="block truncate font-medium">{pub.title}</span>
+                            <span className="flex min-w-0 items-center gap-1.5">
+                              {platform && <PlatformAvatar platform={platform} size="xs" />}
+                              <span className="block min-w-0 truncate font-medium">{pub.title}</span>
+                            </span>
                             <span className={cn(
                               "mt-0.5 block truncate",
-                              isPublishedPublication(pub) ? "text-emerald-100/80" : "text-muted-foreground",
+                              isPublishedPublication(pub) ? "text-emerald-800/85 dark:text-emerald-100/80" : "text-muted-foreground",
                             )}>
                               {platform?.name ?? "—"} · {STATUS_LABELS[pub.status]}
                             </span>
@@ -531,17 +546,17 @@ export default function ContentPlan() {
         </Card>
       )}
 
-      {view === "list" && filtered.length === 0 ? (
+      {view === "list" && listEntries.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
           title="Пусто"
-          description="Запланируйте публикацию или добавьте чекпоинт."
+          description="В выбранном месяце нет публикаций или чекпоинтов."
           actionLabel="Запланировать"
           onAction={() => openAddPub()}
         />
       ) : view === "list" ? (
         <div className="space-y-2">
-          {filtered.map((entry, index) => {
+          {listEntries.map((entry, index) => {
             const entryDate = new Date(entry.data.date);
             const isToday = toDateKey(entryDate) === toDateKey(new Date());
             const isPast = entryDate < new Date() && !isToday;
@@ -621,13 +636,18 @@ export default function ContentPlan() {
                   <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex min-w-0 items-center gap-4">
-                        <DateBadge date={entryDate} />
+                        <DatePlatformBadges date={entryDate} platform={platform} />
                         <div className="min-w-0">
                           <p className="truncate text-left text-sm font-semibold">
                             {publication.title}
                           </p>
                           <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {platform && <Badge variant="secondary">{platform.name}</Badge>}
+                            {platform && (
+                              <Badge variant="secondary" className="gap-1.5">
+                                <PlatformAvatar platform={platform} size="xs" />
+                                {platform.name}
+                              </Badge>
+                            )}
                             <Badge variant="outline">{publication.format}</Badge>
                             {isPublicationOverdue(publication) && <Badge variant="destructive">Просрочено</Badge>}
                           </div>

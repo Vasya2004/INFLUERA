@@ -60,13 +60,13 @@ function SidebarContent({
   location: string;
   onNav?: () => void;
 }) {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const { state } = useStore();
   const { configured, user, signOut } = useAuth();
   const cloudEnabled = configured && isSupabaseConfigured();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const isDark = theme === "dark";
+  const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const profileName = state.profile?.name || "";
   const accountLine = cloudEnabled && user?.email ? user.email : (state.profile?.niche || "Мой блог");
@@ -327,7 +327,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="page-content-ambient mx-auto min-h-full w-full max-w-6xl p-4 pb-28 sm:p-6 sm:pb-32 md:p-8">
+          <div className="page-content-ambient min-h-full w-full max-w-[1680px] p-4 pb-28 sm:p-6 sm:pb-32 md:p-6 xl:p-8">
             {children}
           </div>
         </main>

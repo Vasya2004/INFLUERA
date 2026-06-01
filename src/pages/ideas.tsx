@@ -21,14 +21,6 @@ import { EmptyState, PageHeader } from "@/components/app/page";
 
 const PRIORITIES: Priority[] = ["высокий", "средний", "низкий"];
 
-type IdeaListMode = "active" | "planned" | "archive";
-
-const MODE_LABELS: Record<IdeaListMode, string> = {
-  active: "Активные",
-  planned: "В плане",
-  archive: "Архив",
-};
-
 function IdeaDialog({ open, onClose, idea, platforms }: {
   open: boolean;
   onClose: () => void;
@@ -57,10 +49,10 @@ function IdeaDialog({ open, onClose, idea, platforms }: {
       format: idea?.format ?? "пост",
       priority: idea?.priority ?? "средний",
       status: idea?.status ?? "новая",
-      platformId: idea?.platformId ?? "any",
+      platformId: idea?.platformId && platforms.some(platform => platform.id === idea.platformId) ? idea.platformId : "any",
       tags: formatTagsInput(idea?.tags),
     });
-  }, [open, idea]);
+  }, [open, idea, platforms]);
 
   function handleSubmit() {
     if (!form.title) return;
@@ -156,8 +148,11 @@ function IdeaDialog({ open, onClose, idea, platforms }: {
 
 export default function Ideas() {
   const { state } = useStore();
+  const mainPlatforms = useMemo(
+    () => state.platforms.filter(platform => platform.role === "основная площадка"),
+    [state.platforms],
+  );
   const [search, setSearch] = useState("");
-  const [mode, setMode] = useState<IdeaListMode>("active");
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
   const [tagFilter, setTagFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -180,9 +175,7 @@ export default function Ideas() {
       .filter(idea => {
         const inPlan = isIdeaInPlan(state.publications, idea.id) || idea.status === "превращена в публикацию";
 
-        if (mode === "active" && (idea.status === "архив" || inPlan)) return false;
-        if (mode === "planned" && (idea.status === "архив" || !inPlan)) return false;
-        if (mode === "archive" && idea.status !== "архив") return false;
+        if (idea.status === "архив" || inPlan) return false;
         if (priorityFilter !== "all" && idea.priority !== priorityFilter) return false;
         if (tagFilter !== "all" && !(idea.tags ?? []).includes(tagFilter)) return false;
 
@@ -194,17 +187,7 @@ export default function Ideas() {
         ].join(" ").toLowerCase().includes(query);
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [state.ideas, state.publications, search, mode, priorityFilter, tagFilter]);
-
-  const counts = useMemo(() => {
-    return state.ideas.reduce<Record<IdeaListMode, number>>((acc, idea) => {
-      const inPlan = isIdeaInPlan(state.publications, idea.id) || idea.status === "превращена в публикацию";
-      if (idea.status === "архив") acc.archive += 1;
-      else if (inPlan) acc.planned += 1;
-      else acc.active += 1;
-      return acc;
-    }, { active: 0, planned: 0, archive: 0 });
-  }, [state.ideas, state.publications]);
+  }, [state.ideas, state.publications, search, priorityFilter, tagFilter]);
 
   function openAdd() {
     setDialogOpen(true);
@@ -233,24 +216,6 @@ export default function Ideas() {
               data-testid="input-search-ideas"
             />
           </div>
-        </div>
-
-        <div className="flex rounded-2xl border border-border/80 bg-background/70 p-1 shadow-sm">
-          {(Object.keys(MODE_LABELS) as IdeaListMode[]).map(item => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setMode(item)}
-              className={[
-                "min-h-10 flex-1 rounded-xl px-3 text-sm font-semibold transition-colors",
-                mode === item
-                  ? "bg-primary text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.24)]"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              ].join(" ")}
-            >
-              {MODE_LABELS[item]} <span className="opacity-70">{counts[item]}</span>
-            </button>
-          ))}
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
@@ -291,9 +256,7 @@ export default function Ideas() {
           description={
             state.ideas.length === 0
               ? "Собирайте гипотезы для контента. После переноса в контент-план идея уйдёт из активного списка."
-              : mode === "active"
-                ? "Активные идеи — это рабочий список. Всё, что уже ушло в план или архив, лежит отдельно."
-                : "Попробуйте изменить поиск, фильтры или выбрать другой раздел."
+              : "Идеи, отправленные в контент-план, больше не показываются на этой странице. Попробуйте изменить поиск или фильтры."
           }
           actionLabel={state.ideas.length === 0 ? "Добавить идею" : undefined}
           onAction={state.ideas.length === 0 ? openAdd : undefined}
@@ -322,7 +285,7 @@ export default function Ideas() {
         </AnimatePresence>
       )}
 
-      <IdeaDialog open={dialogOpen} onClose={() => setDialogOpen(false)} platforms={state.platforms} />
+      <IdeaDialog open={dialogOpen} onClose={() => setDialogOpen(false)} platforms={mainPlatforms} />
     </div>
   );
 }
