@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth-context";
 import { Profile } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Upload, UserCircle, X } from "lucide-react";
+import { CheckCircle2, LogOut, Upload, UserCircle, X } from "lucide-react";
 import { PageHeader } from "@/components/app/page";
 import { validateFile } from "@/lib/file-validation";
 
@@ -32,10 +33,12 @@ function completeness(profile: Profile): number {
 
 export default function ProfilePage() {
   const { state, updateProfile } = useStore();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [form, setForm] = useState<Profile>({ ...state.profile });
   const [saved, setSaved] = useState(false);
   const [assetError, setAssetError] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const pct = completeness(form);
@@ -53,6 +56,16 @@ export default function ProfilePage() {
     updateProfile(form);
     setSaved(true);
     toast({ title: "Профиль сохранён", description: "Изменения успешно применены." });
+  }
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+      toast({ title: "Вы вышли из аккаунта" });
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   function pickAvatar() {
@@ -145,6 +158,30 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {user && (
+        <motion.div className="md:hidden" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+          <Card>
+            <CardContent className="flex flex-col gap-3 p-4">
+              <div>
+                <p className="text-sm font-semibold">Аккаунт</p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">{user.email}</p>
+              </div>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="min-h-12 w-full gap-2"
+                data-testid="button-mobile-sign-out"
+              >
+                <LogOut className="h-4 w-4" />
+                {signingOut ? "Выходим…" : "Выйти из аккаунта"}
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="border-2 border-dashed">
