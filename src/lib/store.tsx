@@ -149,6 +149,7 @@ type StoreContextType = {
 
 const StoreContext = createContext<StoreContextType | null>(null);
 const RESUME_REFRESH_INTERVAL_MS = 15_000;
+const CLOUD_REFRESH_INTERVAL_MS = 30_000;
 
 function genId() {
   return Math.random().toString(36).slice(2, 9);
@@ -252,7 +253,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
         let nextState: AppState;
         if (remote) {
-          nextState = withLocalProfileAssets(normalizeState(remote));
+          nextState = normalizeState(remote);
         } else {
           const local = readLocalState();
           const normalizedLocal = local ? normalizeState(local) : null;
@@ -328,7 +329,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const remote = await loadWorkspace(user.id);
         if (!remote || cancelled || (syncStatusRef.current as SyncStatus) === "saving") return;
 
-        const normalized = withLocalProfileAssets(normalizeState(remote));
+        const normalized = normalizeState(remote);
         setState(normalized);
         workspaceCache.setWorkspace(normalized);
         localStorage.setItem(STORE_KEY, JSON.stringify(normalized));
@@ -347,6 +348,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("focus", handleResume);
     window.addEventListener("pageshow", handleResume);
     window.addEventListener("online", handleOnline);
+    const refreshIntervalId = window.setInterval(handleResume, CLOUD_REFRESH_INTERVAL_MS);
 
     return () => {
       cancelled = true;
@@ -354,6 +356,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("focus", handleResume);
       window.removeEventListener("pageshow", handleResume);
       window.removeEventListener("online", handleOnline);
+      window.clearInterval(refreshIntervalId);
     };
   }, [cloudEnabled, ready, user?.id, workspaceCache]);
 

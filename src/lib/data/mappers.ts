@@ -44,7 +44,7 @@ export function emptyProfile(): Profile {
   };
 }
 
-export function mapProfile(row: ProfileRow | null): Profile {
+export async function mapProfile(row: ProfileRow | null): Promise<Profile> {
   if (!row) return emptyProfile();
   return {
     name: row.name ?? "",
@@ -57,14 +57,21 @@ export function mapProfile(row: ProfileRow | null): Profile {
     tone: row.tone ?? "",
     expertise: row.expertise ?? "",
     opportunities: row.opportunities ?? "",
-    avatarUrl: row.avatar_url ?? undefined,
+    avatarUrl: row.avatar_url ?? await resolveStorageUrl("profile-assets", row.avatar_storage_path ?? null),
     avatarStoragePath: row.avatar_storage_path ?? undefined,
-    coverUrl: row.cover_url ?? undefined,
+    coverUrl: row.cover_url ?? await resolveStorageUrl("profile-assets", row.cover_storage_path ?? null),
     coverStoragePath: row.cover_storage_path ?? undefined,
   };
 }
 
-export function mapProfileForDb(userId: string, profile: Profile): ProfileRow {
+export async function mapProfileForDb(userId: string, profile: Profile): Promise<ProfileRow> {
+  const avatarStoragePath = profile.avatarUrl?.startsWith("data:")
+    ? await uploadProfileAsset(userId, "avatar", profile.avatarUrl)
+    : profile.avatarStoragePath ?? null;
+  const coverStoragePath = profile.coverUrl?.startsWith("data:")
+    ? await uploadProfileAsset(userId, "cover", profile.coverUrl)
+    : profile.coverStoragePath ?? null;
+
   return {
     user_id: userId,
     name: profile.name,
@@ -77,10 +84,10 @@ export function mapProfileForDb(userId: string, profile: Profile): ProfileRow {
     tone: profile.tone,
     expertise: profile.expertise,
     opportunities: profile.opportunities,
-    avatar_url: profile.avatarUrl ?? null,
-    avatar_storage_path: profile.avatarStoragePath ?? null,
-    cover_url: profile.coverUrl ?? null,
-    cover_storage_path: profile.coverStoragePath ?? null,
+    avatar_url: avatarStoragePath || profile.avatarUrl?.startsWith("data:") ? null : profile.avatarUrl ?? null,
+    avatar_storage_path: avatarStoragePath,
+    cover_url: coverStoragePath || profile.coverUrl?.startsWith("data:") ? null : profile.coverUrl ?? null,
+    cover_storage_path: coverStoragePath,
   };
 }
 
@@ -402,6 +409,25 @@ async function uploadPlatformIcon(userId: string, platform: Platform): Promise<s
   const storagePath = `${userId}/${platform.id}.${extension}`;
   const { error } = await supabase.storage
     .from("platform-icons")
+    .upload(storagePath, blob, {
+      cacheControl: "3600",
+      contentType: blob.type,
+      upsert: true,
+    });
+
+  if (error) throw error;
+  return storagePath;
+}
+
+async function uploadProfileAsset(userId: string, asset: "avatar" | "cover", dataUrl: string): Promise<string | null> {
+  if (!supabase || !dataUrl.startsWith("data:")) return null;
+
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  const extension = mimeExtension(blob.type);
+  const storagePath = `${userId}/${asset}.${extension}`;
+  const { error } = await supabase.storage
+    .from("profile-assets")
     .upload(storagePath, blob, {
       cacheControl: "3600",
       contentType: blob.type,

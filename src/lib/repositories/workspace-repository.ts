@@ -159,7 +159,7 @@ export async function loadNormalizedWorkspace(userId: string): Promise<AppState 
   const platforms = await Promise.all((platformsResult.data ?? []).map(row => mapPlatform(row as PlatformRow)));
 
   return {
-    profile: mapProfile(profileResult.data as ProfileRow | null),
+    profile: await mapProfile(profileResult.data as ProfileRow | null),
     platforms,
     platformMetrics: (platformMetricsResult.data ?? []).map(row => mapPlatformMetric(row as PlatformMetricRow)),
     goals: (goalsResult.data ?? []).map(row => mapGoal(row as GoalRow)),
@@ -204,7 +204,7 @@ async function saveNormalizedWorkspace(userId: string, state: AppState): Promise
 
   const profileResult = await client
     .from("profiles")
-    .upsert(mapProfileForDb(userId, state.profile), { onConflict: "user_id" });
+    .upsert(await mapProfileForDb(userId, state.profile), { onConflict: "user_id" });
   if (profileResult.error) throw classifyApiError(profileResult.error);
 
   const platformRows = await Promise.all(state.platforms.map(platform => mapPlatformForDb(userId, platform)));
