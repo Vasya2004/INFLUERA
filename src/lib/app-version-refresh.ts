@@ -1,5 +1,6 @@
 const CHECK_INTERVAL_MS = 60_000;
-const BUILD_ASSET_PATTERN = /\/assets\/[^"']+\.(?:js|css)/g;
+const BUILD_SCRIPT_PATTERN = /\/assets\/[^"']+\.js/g;
+const RELOAD_TARGET_KEY = "influera_reload_target_build_v1";
 
 let initialSignature: string | null = null;
 let lastCheckAt = 0;
@@ -8,7 +9,6 @@ let checking = false;
 function readCurrentSignature() {
   const assets = [
     ...Array.from(document.querySelectorAll<HTMLScriptElement>("script[src]")).map(node => node.src),
-    ...Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]')).map(node => node.href),
   ];
 
   return assets
@@ -26,8 +26,21 @@ function readCurrentSignature() {
 }
 
 function readHtmlSignature(html: string) {
-  const matches = html.match(BUILD_ASSET_PATTERN) ?? [];
+  const matches = html.match(BUILD_SCRIPT_PATTERN) ?? [];
   return [...new Set(matches)].sort().join("|");
+}
+
+function reloadOnceForBuild(remoteSignature: string) {
+  try {
+    const previousTarget = sessionStorage.getItem(RELOAD_TARGET_KEY);
+    if (previousTarget === remoteSignature) return;
+    sessionStorage.setItem(RELOAD_TARGET_KEY, remoteSignature);
+  } catch {
+    // If sessionStorage is unavailable, prefer not reloading over a reload loop.
+    return;
+  }
+
+  window.location.reload();
 }
 
 async function checkForNewBuild(force = false) {
@@ -50,7 +63,16 @@ async function checkForNewBuild(force = false) {
     const html = await response.text();
     const remoteSignature = readHtmlSignature(html);
     if (remoteSignature && initialSignature && remoteSignature !== initialSignature) {
-      window.location.reload();
+      reloadOnceForBuild(remoteSignature);
+      return;
+    }
+
+    if (remoteSignature && remoteSignature === initialSignature) {
+      try {
+        sessionStorage.removeItem(RELOAD_TARGET_KEY);
+      } catch {
+        // Ignore storage cleanup failures.
+      }
     }
   } catch {
     // Offline or captive network: retry on next focus/online event.
@@ -63,13 +85,22 @@ export function registerAppVersionRefresh() {
   if (typeof window === "undefined") return;
   if (initialSignature) return;
 
-  initialSignature = readCurrentSignature();
+  const register = () => {
+    initialSignature = readCurrentSignature();
+    if (!initialSignature) return;
 
-  const check = () => void checkForNewBuild();
-  const forceCheck = () => void checkForNewBuild(true);
+    const check = () => void checkForNewBuild();
+    const forceCheck = () => void checkForNewBuild(true);
 
-  document.addEventListener("visibilitychange", check);
-  window.addEventListener("focus", check);
-  window.addEventListener("pageshow", check);
-  window.addEventListener("online", forceCheck);
+    document.addEventListener("visibilitychange", check);
+    window.addEventListener("focus", check);
+    window.addEventListener("pageshow", check);
+    window.addEventListener("online", forceCheck);
+  };
+
+  if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", register, { once: true });
+  } else {
+    register();
+  }
 }
