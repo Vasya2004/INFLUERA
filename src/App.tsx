@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Redirect, Switch, Route, Router as WouterRouter, useRoute } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -56,6 +56,16 @@ function AppRouter() {
   );
 }
 
+function LegacyIdeaDetailRedirect() {
+  const [, params] = useRoute("/ideas/:id");
+  return <Redirect to={`/app/ideas/${params?.id ?? ""}`} />;
+}
+
+function LegacySingularIdeaDetailRedirect() {
+  const [, params] = useRoute("/idea/:id");
+  return <Redirect to={`/app/ideas/${params?.id ?? ""}`} />;
+}
+
 function RootRouter() {
   const protectedApp = (
     <AppGate>
@@ -70,6 +80,9 @@ function RootRouter() {
       <Route path="/register" component={AuthPage} />
       <Route path="/forgot-password" component={AuthPage} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/ideas/:id" component={LegacyIdeaDetailRedirect} />
+      <Route path="/idea/:id" component={LegacySingularIdeaDetailRedirect} />
+      <Route path="/ideas"><Redirect to="/app/ideas" /></Route>
       <Route path="/app">{protectedApp}</Route>
       <Route path="/app/:rest*">{protectedApp}</Route>
       <Route component={NotFound} />
