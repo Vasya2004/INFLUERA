@@ -33,6 +33,8 @@ const queryClient = new QueryClient({
   },
 });
 
+const APP_ROUTE_PATTERN = /^\/app(?:\/.*)?$/;
+
 function AppRouter() {
   return (
     <MainLayout>
@@ -83,8 +85,7 @@ function RootRouter() {
       <Route path="/ideas/:id" component={LegacyIdeaDetailRedirect} />
       <Route path="/idea/:id" component={LegacySingularIdeaDetailRedirect} />
       <Route path="/ideas"><Redirect to="/app/ideas" /></Route>
-      <Route path="/app">{protectedApp}</Route>
-      <Route path="/app/:rest*">{protectedApp}</Route>
+      <Route path={APP_ROUTE_PATTERN}>{protectedApp}</Route>
       <Route component={NotFound} />
     </Switch>
   );
