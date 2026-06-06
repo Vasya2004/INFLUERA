@@ -322,7 +322,7 @@ export default function ContentPlan() {
             </Button>
           )}
         </div>
-        <div className="grid w-full grid-cols-3 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm sm:flex sm:w-auto">
+        <div className="hidden w-full grid-cols-3 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm md:grid md:w-auto">
           {VIEW_OPTIONS.map(option => {
             const Icon = option.icon;
             return (
