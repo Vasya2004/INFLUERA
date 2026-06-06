@@ -45,7 +45,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (configured && !loading && session) {
-      setLocation("/");
+      setLocation("/app");
     }
   }, [configured, loading, session, setLocation]);
 
@@ -182,7 +182,7 @@ VITE_SUPABASE_ANON_KEY=your_anon_key`}
           </CardHeader>
           <CardContent>
             <Button variant="outline" className="w-full" asChild>
-              <Link href="/">Продолжить без входа (локальные данные)</Link>
+              <Link href="/app">Продолжить без входа (локальные данные)</Link>
             </Button>
           </CardContent>
         </Card>

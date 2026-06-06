@@ -312,21 +312,21 @@ export default function Dashboard() {
       value: audienceCurrent.toLocaleString("ru-RU"),
       detail: `${Math.round(subscriberProgress)}% от цели`,
       illustration: "audience",
-      href: "/platforms",
+      href: "/app/platforms",
     },
     {
       label: "Активных целей",
       value: activeGoals.length.toString(),
       detail: "В процессе выполнения",
       illustration: "goals",
-      href: "/goals",
+      href: "/app/goals",
     },
     {
       label: "Банк идей",
       value: visibleIdeas.length.toString(),
       detail: `${newIdeas.length} новых`,
       illustration: "ideas",
-      href: "/ideas",
+      href: "/app/ideas",
     },
     {
       label: "В контент-плане",
@@ -335,7 +335,7 @@ export default function Dashboard() {
         ? `${weeklyPlan.published}/${weeklyPlan.planned} за 7 дн. · ${weeklyPlan.percent}%`
         : "Публикаций запланировано",
       illustration: "calendar",
-      href: "/content-plan",
+      href: "/app/content-plan",
     },
   ];
 
@@ -474,7 +474,7 @@ export default function Dashboard() {
             className={`h-full rounded-3xl ${glassPanelNestedClass}`}
             accent="primary"
             action={
-              <Link href="/content-plan" className={panelActionLinkClass}>
+              <Link href="/app/content-plan" className={panelActionLinkClass}>
                 Все
               </Link>
             }
@@ -526,7 +526,7 @@ export default function Dashboard() {
             <div>
               <h2 className="text-sm font-semibold text-foreground">Активные цели</h2>
             </div>
-            <Link href="/goals" className={panelActionLinkClass}>
+            <Link href="/app/goals" className={panelActionLinkClass}>
               Все цели
             </Link>
           </div>
@@ -579,7 +579,7 @@ export default function Dashboard() {
             className={`h-full rounded-3xl ${glassPanelNestedClass}`}
             accent="violet"
             action={
-              <Link href="/ideas" className={panelActionLinkClass}>
+              <Link href="/app/ideas" className={panelActionLinkClass}>
                 Все
               </Link>
             }
@@ -599,7 +599,7 @@ export default function Dashboard() {
                   return (
                     <Link
                       key={idea.id}
-                      href="/ideas"
+                      href="/app/ideas"
                       className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-primary/[0.035]"
                     >
                       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
@@ -646,7 +646,7 @@ export default function Dashboard() {
             className={`h-full rounded-3xl ${glassPanelNestedClass}`}
             accent="emerald"
             action={
-              <Link href="/platforms" className={panelActionLinkClass}>
+              <Link href="/app/platforms" className={panelActionLinkClass}>
                 Все
               </Link>
             }

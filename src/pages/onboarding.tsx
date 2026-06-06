@@ -155,7 +155,7 @@ export default function OnboardingPage() {
         }],
       });
       toast({ title: "Рабочее пространство готово", description: "Onboarding завершён, можно планировать контент." });
-      setLocation("/");
+      setLocation("/app");
     } catch (error) {
       toast({
         title: "Не удалось завершить onboarding",

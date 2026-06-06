@@ -255,7 +255,7 @@ export default function ContentPlan() {
   }
 
   function openPublicationTarget(publication: Publication) {
-    setLocation(`/content-plan/${publication.id}`);
+    setLocation(`/app/content-plan/${publication.id}`);
   }
 
   function shiftPeriod(direction: -1 | 1) {
@@ -642,12 +642,6 @@ export default function ContentPlan() {
                             {publication.title}
                           </p>
                           <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {platform && (
-                              <Badge variant="secondary" className="gap-1.5">
-                                <PlatformAvatar platform={platform} size="xs" />
-                                {platform.name}
-                              </Badge>
-                            )}
                             <Badge variant="outline">{publication.format}</Badge>
                             {isPublicationOverdue(publication) && <Badge variant="destructive">Просрочено</Badge>}
                           </div>

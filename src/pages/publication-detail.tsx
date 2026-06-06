@@ -62,7 +62,7 @@ function scriptTextFromRows(rows?: IdeaScriptRow[]) {
 }
 
 export default function PublicationDetail() {
-  const [, params] = useRoute("/content-plan/:id");
+  const [, params] = useRoute("/app/content-plan/:id");
   const [, setLocation] = useLocation();
   const { state, updatePublication, deletePublication } = useStore();
   const { toast } = useToast();
@@ -135,7 +135,7 @@ export default function PublicationDetail() {
         title="Публикация не найдена"
         description="Возможно, она была удалена или ссылка устарела."
         actionLabel="Вернуться в контент-план"
-        onAction={() => setLocation("/content-plan")}
+        onAction={() => setLocation("/app/content-plan")}
       />
     );
   }
@@ -195,7 +195,7 @@ export default function PublicationDetail() {
   function confirmDelete() {
     deletePublication(currentPublication.id);
     setDeleteOpen(false);
-    setLocation("/content-plan");
+    setLocation("/app/content-plan");
   }
 
   return (
@@ -205,7 +205,7 @@ export default function PublicationDetail() {
         action={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
-              <Link href="/content-plan">
+              <Link href="/app/content-plan">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад
               </Link>
@@ -471,7 +471,7 @@ export default function PublicationDetail() {
                   )}
                 </div>
                 <Button variant="outline" size="sm" className="w-full justify-start gap-2" asChild>
-                  <Link href={`/ideas/${linkedIdea.id}`}>
+                  <Link href={`/app/ideas/${linkedIdea.id}`}>
                     <Lightbulb className="h-4 w-4" />
                     Открыть идею
                   </Link>

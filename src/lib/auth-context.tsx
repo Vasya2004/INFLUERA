@@ -70,13 +70,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
+    const finishLoading = (sess: Session | null) => {
       if (!mounted) return;
-      setSession(data.session);
+      setSession(sess);
       setLoading(false);
-    });
+    };
+
+    // Таймаут-страховка: если getSession зависнет (например, localStorage недоступен
+    // на iOS Safari в приватном режиме), сбрасываем loading через 5 секунд.
+    const timeout = setTimeout(() => finishLoading(null), 5000);
+
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        clearTimeout(timeout);
+        finishLoading(data.session);
+      })
+      .catch(() => {
+        clearTimeout(timeout);
+        finishLoading(null);
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      clearTimeout(timeout);
       setSession(nextSession);
       setLoading(false);
       if (event === "PASSWORD_RECOVERY") {
@@ -86,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, [configured]);

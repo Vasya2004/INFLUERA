@@ -13,7 +13,7 @@ export function AppLoading({ label = "Загрузка…" }: { label?: string }
   );
 }
 
-/** Защищает основное приложение; страницы /login, /register и т.д. — в RootRouter (App.tsx). */
+/** Защищает основное приложение; страницы /, /login, /register и т.д. — в RootRouter (App.tsx). */
 export function AppGate({ children }: { children: ReactNode }) {
   const { configured, loading, session, recoveryMode } = useAuth();
   const { ready } = useStore();
@@ -31,7 +31,7 @@ export function AppGate({ children }: { children: ReactNode }) {
   }
 
   if (!session) {
-    return <Redirect to="/login" />;
+    return <Redirect to="/" />;
   }
 
   if (!ready) {

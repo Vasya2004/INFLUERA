@@ -8,6 +8,7 @@ import { StoreProvider } from "@/lib/store";
 import { AppGate } from "@/components/app/app-shell";
 import { MainLayout } from "@/components/layout/main-layout";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/landing";
 import AuthPage from "@/pages/auth";
 import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
@@ -35,17 +36,17 @@ function AppRouter() {
   return (
     <MainLayout>
       <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/goals" component={Goals} />
-        <Route path="/base" component={Base} />
-        <Route path="/platforms" component={Platforms} />
-        <Route path="/ideas/:id" component={IdeaDetail} />
-        <Route path="/ideas" component={Ideas} />
-        <Route path="/content-plan/:id" component={PublicationDetail} />
-        <Route path="/content-plan" component={ContentPlan} />
-        <Route path="/templates" component={Templates} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/settings" component={Settings} />
+        <Route path="/app" component={Dashboard} />
+        <Route path="/app/goals" component={Goals} />
+        <Route path="/app/base" component={Base} />
+        <Route path="/app/platforms" component={Platforms} />
+        <Route path="/app/ideas/:id" component={IdeaDetail} />
+        <Route path="/app/ideas" component={Ideas} />
+        <Route path="/app/content-plan/:id" component={PublicationDetail} />
+        <Route path="/app/content-plan" component={ContentPlan} />
+        <Route path="/app/templates" component={Templates} />
+        <Route path="/app/profile" component={Profile} />
+        <Route path="/app/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>
@@ -53,17 +54,22 @@ function AppRouter() {
 }
 
 function RootRouter() {
+  const protectedApp = (
+    <AppGate>
+      <AppRouter />
+    </AppGate>
+  );
+
   return (
     <Switch>
+      <Route path="/" component={Landing} />
       <Route path="/login" component={AuthPage} />
       <Route path="/register" component={AuthPage} />
       <Route path="/forgot-password" component={AuthPage} />
       <Route path="/reset-password" component={ResetPassword} />
-      <Route>
-        <AppGate>
-          <AppRouter />
-        </AppGate>
-      </Route>
+      <Route path="/app">{protectedApp}</Route>
+      <Route path="/app/:rest*">{protectedApp}</Route>
+      <Route component={NotFound} />
     </Switch>
   );
 }

@@ -54,7 +54,7 @@ function scriptTextFromRows(rows?: IdeaScriptRow[]) {
 }
 
 export default function IdeaDetail() {
-  const [, params] = useRoute("/ideas/:id");
+  const [, params] = useRoute("/app/ideas/:id");
   const [, setLocation] = useLocation();
   const { state, updateIdea, deleteIdea, addPublication } = useStore();
   const { toast } = useToast();
@@ -111,7 +111,7 @@ export default function IdeaDetail() {
         title="Идея не найдена"
         description="Возможно, она была удалена или ссылка устарела."
         actionLabel="Вернуться к идеям"
-        onAction={() => setLocation("/ideas")}
+        onAction={() => setLocation("/app/ideas")}
       />
     );
   }
@@ -199,13 +199,13 @@ export default function IdeaDetail() {
       title: "Идея отправлена в архив",
       description: "Она больше не будет показываться среди активных идей.",
     });
-    setLocation("/ideas");
+    setLocation("/app/ideas");
   }
 
   function confirmDelete() {
     deleteIdea(currentIdea.id);
     setDeleteOpen(false);
-    setLocation("/ideas");
+    setLocation("/app/ideas");
   }
 
   return (
@@ -215,7 +215,7 @@ export default function IdeaDetail() {
         action={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
-              <Link href="/ideas">
+              <Link href="/app/ideas">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад
               </Link>
@@ -405,7 +405,7 @@ export default function IdeaDetail() {
                 return (
                   <Link
                     key={publication.id}
-                    href={`/content-plan/${publication.id}`}
+                    href={`/app/content-plan/${publication.id}`}
                     className="block rounded-xl border border-border/80 bg-muted/20 p-3 transition-colors hover:border-primary/40"
                   >
                     <p className="text-sm font-semibold">{publication.title}</p>

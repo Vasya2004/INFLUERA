@@ -18,7 +18,7 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (configured && !loading && session && !recoveryMode) {
-      setLocation("/");
+      setLocation("/app");
     }
   }, [configured, loading, session, recoveryMode, setLocation]);
 
@@ -63,7 +63,7 @@ export default function ResetPassword() {
         toast({ title: "Не удалось обновить пароль", description: error, variant: "destructive" });
       } else {
         toast({ title: "Пароль обновлён", description: "Теперь можно пользоваться приложением." });
-        setLocation("/");
+        setLocation("/app");
       }
     } finally {
       setBusy(false);

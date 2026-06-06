@@ -38,7 +38,7 @@ export function IdeaCard({
   const primaryPublication = linked[0];
 
   return (
-    <Link href={`/ideas/${idea.id}`} className="block h-full">
+    <Link href={`/app/ideas/${idea.id}`} className="block h-full">
       <Card className={cn("flex h-full cursor-pointer flex-col transition-colors hover:border-primary/40", compact && "shadow-sm")}>
         <CardHeader className={cn("pb-2", compact && "p-3 pb-1")}>
           <CardTitle className="break-words text-base leading-snug">{idea.title}</CardTitle>

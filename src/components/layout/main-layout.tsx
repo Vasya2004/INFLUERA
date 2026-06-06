@@ -14,14 +14,22 @@ import {
 import { AppLogo } from "@/components/app/logo";
 
 const mainNav = [
-  { name: "Главная", href: "/", icon: LayoutDashboard },
-  { name: "Цели", href: "/goals", icon: Target },
-  { name: "Идеи", href: "/ideas", icon: Lightbulb },
-  { name: "Контент-план", href: "/content-plan", icon: CalendarDays },
-  { name: "База", href: "/base", icon: Database, aliases: ["/platforms", "/templates"] },
+  { name: "Главная", href: "/app", icon: LayoutDashboard },
+  { name: "Цели", href: "/app/goals", icon: Target },
+  { name: "Идеи", href: "/app/ideas", icon: Lightbulb },
+  { name: "Контент-план", href: "/app/content-plan", icon: CalendarDays },
+  { name: "База", href: "/app/base", icon: Database, aliases: ["/app/platforms", "/app/templates"] },
 ];
 
 const mobileBottomNav = mainNav;
+
+function isMainNavItemActive(item: typeof mainNav[number], location: string) {
+  if (item.href === "/app") return location === "/app";
+  return location === item.href
+    || location.startsWith(item.href + "/")
+    || location.startsWith(item.href + "?")
+    || item.aliases?.some(alias => location === alias || location.startsWith(alias + "/"));
+}
 
 function exportData(state: object) {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -90,18 +98,13 @@ function SidebarContent({
     <>
       {/* Logo */}
       <div className="px-5 pt-6 pb-5 shrink-0">
-        <AppLogo showWordmark size="xs" onClick={onNav} />
+        <AppLogo showWordmark size="xs" href="/app" onClick={onNav} />
       </div>
 
       {/* Main nav */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
         {mainNav.map((item) => {
-          const isActive = item.href === "/"
-            ? location === "/"
-            : location === item.href
-              || location.startsWith(item.href + "/")
-              || location.startsWith(item.href + "?")
-              || item.aliases?.some(alias => location === alias || location.startsWith(alias + "/"));
+          const isActive = isMainNavItemActive(item, location);
           const Icon = item.icon;
           return (
             <Link
@@ -135,7 +138,7 @@ function SidebarContent({
               className="glass-card mb-2 overflow-hidden rounded-3xl"
             >
               <Link
-                href="/profile"
+                href="/app/profile"
                 onClick={() => { setProfileMenuOpen(false); onNav?.(); }}
                 className="flex items-center gap-3 px-3.5 py-3.5 transition-colors hover:bg-primary/8"
               >
@@ -163,22 +166,22 @@ function SidebarContent({
                 </span>
               </button>
               <Link
-                href="/profile"
+                href="/app/profile"
                 onClick={() => { setProfileMenuOpen(false); onNav?.(); }}
                 className={cn(
                   "flex items-center gap-3 px-3.5 py-3 text-sm font-medium transition-colors hover:bg-primary/8",
-                  location === "/profile" && "bg-primary/10 text-foreground"
+                  location === "/app/profile" && "bg-primary/10 text-foreground"
                 )}
               >
                 <UserCircle className="h-4 w-4 shrink-0" />
                 Профиль
               </Link>
               <Link
-                href="/settings"
+                href="/app/settings"
                 onClick={() => { setProfileMenuOpen(false); onNav?.(); }}
                 className={cn(
                   "flex items-center gap-3 px-3.5 py-3 text-sm font-medium transition-colors hover:bg-primary/8",
-                  location === "/settings" && "bg-primary/10 text-foreground"
+                  location === "/app/settings" && "bg-primary/10 text-foreground"
                 )}
               >
                 <Settings className="h-4 w-4 shrink-0" />
@@ -254,14 +257,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     ? profileName.trim().split(/\s+/).map((word: string) => word[0]).join("").toUpperCase().slice(0, 2)
     : "IN";
   const avatarUrl = state.profile?.avatarUrl;
-  const isSettingsActive = location === "/settings";
+  const isSettingsActive = location === "/app/settings";
 
-  const isActiveRoute = (item: typeof mainNav[number]) => item.href === "/"
-    ? location === "/"
-    : location === item.href
-      || location.startsWith(item.href + "/")
-      || location.startsWith(item.href + "?")
-      || item.aliases?.some(alias => location === alias || location.startsWith(alias + "/"));
+  const isActiveRoute = (item: typeof mainNav[number]) => isMainNavItemActive(item, location);
 
   return (
     <div className="app-shell flex h-[100dvh] min-h-[100dvh] w-full overflow-hidden text-foreground selection:bg-primary selection:text-primary-foreground">
@@ -277,7 +275,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile top controls */}
         <header className="sticky top-0 z-30 grid grid-cols-[3.25rem_minmax(0,1fr)_3.25rem] items-center gap-3 bg-transparent px-4 pb-2 pt-3 md:hidden">
           <Link
-            href="/profile"
+            href="/app/profile"
             aria-label="Профиль"
             className="flex h-[3.25rem] w-[3.25rem] items-center justify-center overflow-hidden rounded-full bg-white/[0.045] p-1.5 shadow-[0_14px_34px_hsl(0_0%_0%/.12)] transition-all hover:bg-white/[0.07]"
           >
@@ -286,7 +284,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
           <div className="mx-auto flex h-14 w-full max-w-[18rem] items-center justify-center rounded-[1.75rem] bg-white/[0.045] p-1.5 shadow-[0_18px_46px_hsl(0_0%_0%/.12)]">
             <Link
-              href="/"
+              href="/app"
               aria-label="Influera"
               className="flex h-full w-full items-center justify-center rounded-[1.35rem] bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)] transition-all"
             >
@@ -295,7 +293,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <Link
-            href="/settings"
+            href="/app/settings"
             aria-label="Настройки"
             className={cn(
               "flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-[1.35rem] bg-white/[0.045] shadow-[0_14px_34px_hsl(0_0%_0%/.12)] transition-all hover:bg-white/[0.07]",
