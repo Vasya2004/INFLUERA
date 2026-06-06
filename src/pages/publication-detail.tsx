@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, CalendarDays, ExternalLink, FileText, Lightbulb, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, ExternalLink, FileText, Lightbulb, Save, Trash2 } from "lucide-react";
 import { PlatformAvatar } from "@/components/app/platform-avatar";
 
 function toDateInputValue(date: string) {
@@ -57,9 +57,8 @@ function rowsFromLegacyFields(script?: string, storyboard?: string, caption?: st
   }));
 }
 
-function inferScriptMode(format: ContentFormat, storyboard?: string, rows?: IdeaScriptRow[]): IdeaScriptMode {
-  if (storyboard?.trim() || rows?.some(row => row.storyboard.trim())) return "video";
-  return format === "пост" || format === "Telegram-пост" || format === "карусель" ? "post" : "video";
+function scriptTextFromRows(rows?: IdeaScriptRow[]) {
+  return (rows ?? []).map(row => row.text).filter(Boolean).join("\n\n");
 }
 
 export default function PublicationDetail() {
@@ -101,6 +100,10 @@ export default function PublicationDetail() {
 
   useEffect(() => {
     if (!enrichedPublication) return;
+    const scriptRows = enrichedPublication.scriptRows?.length
+      ? enrichedPublication.scriptRows.map(row => createScriptRow(row))
+      : rowsFromLegacyFields(enrichedPublication.script, enrichedPublication.storyboard, enrichedPublication.caption);
+    const scriptText = enrichedPublication.caption ?? enrichedPublication.script ?? scriptTextFromRows(scriptRows);
     setForm({
       title: enrichedPublication.title,
       date: toDateInputValue(enrichedPublication.date),
@@ -113,15 +116,13 @@ export default function PublicationDetail() {
       note: enrichedPublication.note ?? "",
       url: enrichedPublication.url ?? "",
       hook: enrichedPublication.hook ?? "",
-      caption: enrichedPublication.caption ?? "",
-      postText: enrichedPublication.scriptMode === "post" ? enrichedPublication.caption ?? enrichedPublication.script ?? "" : "",
+      caption: scriptText,
+      postText: scriptText,
       cta: enrichedPublication.cta ?? "",
-      script: enrichedPublication.script ?? "",
+      script: scriptText,
       storyboard: enrichedPublication.storyboard ?? "",
-      scriptRows: enrichedPublication.scriptRows?.length
-        ? enrichedPublication.scriptRows.map(row => createScriptRow(row))
-        : rowsFromLegacyFields(enrichedPublication.script, enrichedPublication.storyboard, enrichedPublication.caption),
-      scriptMode: enrichedPublication.scriptMode ?? inferScriptMode(enrichedPublication.format, enrichedPublication.storyboard, enrichedPublication.scriptRows),
+      scriptRows: [{ ...createScriptRow(scriptRows[0]), text: scriptText, storyboard: "" }],
+      scriptMode: "post",
       templateId: enrichedPublication.templateId ?? "none",
       checklist: (enrichedPublication.checklist ?? DEFAULT_PUBLICATION_CHECKLIST).map(item => ({ ...item })),
     });
@@ -149,55 +150,22 @@ export default function PublicationDetail() {
     setForm(current => ({ ...current, [key]: value }));
   };
 
-  function updateScriptRow(id: string, key: "text" | "storyboard", value: string) {
-    setForm(current => ({
-      ...current,
-      scriptRows: current.scriptRows.map(row => row.id === id ? { ...row, [key]: value } : row),
-    }));
-  }
-
-  function addScriptRow() {
-    setForm(current => ({ ...current, scriptRows: [...current.scriptRows, createScriptRow()] }));
-  }
-
-  function removeScriptRow(id: string) {
-    setForm(current => ({
-      ...current,
-      scriptRows: current.scriptRows.length > 1
-        ? current.scriptRows.filter(row => row.id !== id)
-        : [createScriptRow()],
-    }));
-  }
-
   function setPostText(value: string) {
     setForm(current => ({
       ...current,
       postText: value,
       caption: value,
-    }));
-  }
-
-  function setScriptMode(value: IdeaScriptMode) {
-    setForm(current => ({
-      ...current,
-      scriptMode: value,
-      scriptRows: current.scriptRows.length ? current.scriptRows : [createScriptRow()],
+      script: value,
+      scriptRows: [{ ...(current.scriptRows[0] ?? createScriptRow()), text: value, storyboard: "" }],
     }));
   }
 
   function savePublication() {
     if (!form.title.trim() || !form.platformId) return;
-    const videoRows = form.scriptRows
-      .map(row => ({
-        ...row,
-        text: row.text.trim(),
-        storyboard: row.storyboard.trim(),
-      }))
-      .filter(row => row.text || row.storyboard);
-    const normalizedRows = videoRows.length ? videoRows : [createScriptRow()];
-    const videoScript = videoRows.map(row => row.text).filter(Boolean).join("\n\n");
-    const storyboard = videoRows.map(row => row.storyboard).filter(Boolean).join("\n\n");
     const postText = form.postText.trim();
+    const normalizedRows = postText
+      ? [{ ...(form.scriptRows[0] ?? createScriptRow()), text: postText, storyboard: "" }]
+      : [createScriptRow()];
 
     const next: Publication = {
       ...currentPublication,
@@ -210,12 +178,12 @@ export default function PublicationDetail() {
       note: form.note.trim() || undefined,
       url: form.url.trim() || undefined,
       hook: form.hook.trim() || undefined,
-      caption: form.scriptMode === "post" ? postText || undefined : videoScript || undefined,
+      caption: postText || undefined,
       cta: form.cta.trim() || undefined,
-      script: form.scriptMode === "post" ? postText || undefined : videoScript || undefined,
-      storyboard: storyboard || undefined,
+      script: postText || undefined,
+      storyboard: undefined,
       scriptRows: normalizedRows,
-      scriptMode: form.scriptMode,
+      scriptMode: "post",
       templateId: form.templateId === "none" ? undefined : form.templateId,
       checklist: form.checklist,
     };
@@ -342,108 +310,25 @@ export default function PublicationDetail() {
 
           <Card>
             <CardHeader>
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText className="h-5 w-5 text-primary" />
-                    Сценарий / пост
-                  </CardTitle>
-                </div>
-                <div className="grid grid-cols-2 rounded-2xl border border-border/80 bg-background/80 p-1">
-                  {(["post", "video"] as IdeaScriptMode[]).map(mode => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setScriptMode(mode)}
-                      className={cn(
-                        "min-h-10 rounded-xl px-4 text-sm font-semibold transition-all",
-                        form.scriptMode === mode ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {mode === "post" ? "Пост" : "Видео"}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-primary" />
+                Сценарий / пост
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {form.scriptMode === "post" ? (
-                <div className="space-y-2">
-                  <div className="flex items-end justify-between gap-3">
-                    <Label>Текст поста</Label>
-                    <span className="text-xs text-muted-foreground">{form.postText.trim().length} символов</span>
-                  </div>
-                  <Textarea
-                    value={form.postText}
-                    rows={14}
-                    placeholder="Напишите пост целиком: заход, основная мысль, примеры и финальный призыв."
-                    className="min-h-80 resize-y border-border/80 bg-background/70 text-base leading-7"
-                    onChange={event => setPostText(event.target.value)}
-                  />
+              <div className="space-y-2">
+                <div className="flex items-end justify-between gap-3">
+                  <Label>Текст</Label>
+                  <span className="text-xs text-muted-foreground">{form.postText.trim().length} символов</span>
                 </div>
-              ) : (
-                <div className="overflow-hidden rounded-2xl border border-border/80">
-                  <div className="flex flex-col gap-3 border-b border-border/80 bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold">Покадровый сценарий</p>
-                    </div>
-                  </div>
-                  <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] border-b border-border/80 bg-muted/20 text-sm font-semibold text-muted-foreground md:grid">
-                    <div className="px-4 py-3">Текст</div>
-                    <div className="border-l border-border/80 px-4 py-3">Раскадровка</div>
-                    <div className="border-l border-border/80" />
-                  </div>
-                  <div className="divide-y divide-border/80">
-                    {form.scriptRows.map((row, index) => (
-                      <div key={row.id} className="grid gap-3 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] md:gap-0 md:p-0">
-                        <div className="space-y-1.5 md:p-3">
-                          <Label className="md:hidden">Текст {index + 1}</Label>
-                          <Textarea
-                            value={row.text}
-                            rows={5}
-                            placeholder="Что говорим в этой части..."
-                            className="min-h-32 resize-y border-border/80 bg-background/70"
-                            onChange={event => updateScriptRow(row.id, "text", event.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1.5 md:border-l md:border-border/80 md:p-3">
-                          <Label className="md:hidden">Раскадровка {index + 1}</Label>
-                          <Textarea
-                            value={row.storyboard}
-                            rows={5}
-                            placeholder="Что показываем: кадр, экран, жест, b-roll..."
-                            className="min-h-32 resize-y border-border/80 bg-background/70"
-                            onChange={event => updateScriptRow(row.id, "storyboard", event.target.value)}
-                          />
-                        </div>
-                        <div className="flex items-center justify-end md:border-l md:border-border/80 md:p-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 text-destructive hover:text-destructive"
-                            onClick={() => removeScriptRow(row.id)}
-                            aria-label={`Удалить строку ${index + 1}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="border-t border-border/80 bg-muted/20 p-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-11 w-full rounded-xl gap-2"
-                      onClick={addScriptRow}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Добавить строку
-                    </Button>
-                  </div>
-                </div>
-              )}
+                <Textarea
+                  value={form.postText}
+                  rows={14}
+                  placeholder="Напишите пост, сценарий или структуру публикации..."
+                  className="min-h-80 resize-y border-border/80 bg-background/70 text-base leading-7"
+                  onChange={event => setPostText(event.target.value)}
+                />
+              </div>
 
               <div className="space-y-1.5">
                 <Label>Заметка</Label>
@@ -495,7 +380,6 @@ export default function PublicationDetail() {
                     {platform.name}
                   </Badge>
                 )}
-                <Badge variant="outline">{form.scriptMode === "post" ? "Пост" : "Видео"}</Badge>
                 {overdue && <Badge variant="destructive">Просрочено</Badge>}
               </div>
               <p className="text-muted-foreground">
@@ -570,14 +454,6 @@ export default function PublicationDetail() {
                     {form.scriptRows.some(row => row.text.trim()) || form.postText.trim() ? "готов" : "пусто"}
                   </span>
                 </div>
-                {form.scriptMode === "video" && (
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <span>Раскадровка</span>
-                    <span className={form.scriptRows.some(row => row.storyboard.trim()) ? "text-primary" : ""}>
-                      {form.scriptRows.some(row => row.storyboard.trim()) ? "готова" : "пусто"}
-                    </span>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>

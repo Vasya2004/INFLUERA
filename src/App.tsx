@@ -13,7 +13,6 @@ import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
 import Goals from "@/pages/goals";
 import Base from "@/pages/base";
-import AiProducer from "@/pages/ai-producer";
 import Platforms from "@/pages/platforms";
 import Ideas from "@/pages/ideas";
 import IdeaDetail from "@/pages/idea-detail";
@@ -39,7 +38,6 @@ function AppRouter() {
         <Route path="/" component={Dashboard} />
         <Route path="/goals" component={Goals} />
         <Route path="/base" component={Base} />
-        <Route path="/ai-producer" component={AiProducer} />
         <Route path="/platforms" component={Platforms} />
         <Route path="/ideas/:id" component={IdeaDetail} />
         <Route path="/ideas" component={Ideas} />

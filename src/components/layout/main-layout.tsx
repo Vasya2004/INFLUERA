@@ -8,7 +8,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Target, Database, Lightbulb, CalendarDays,
-  UserCircle, Settings, Sun, Moon, Download, Bot,
+  UserCircle, Settings, Sun, Moon, Download,
   ChevronRight, ChevronUp, LogOut,
 } from "lucide-react";
 import { AppLogo } from "@/components/app/logo";
@@ -19,10 +19,9 @@ const mainNav = [
   { name: "Идеи", href: "/ideas", icon: Lightbulb },
   { name: "Контент-план", href: "/content-plan", icon: CalendarDays },
   { name: "База", href: "/base", icon: Database, aliases: ["/platforms", "/templates"] },
-  { name: "AI Producer", href: "/ai-producer", icon: Bot },
 ];
 
-const mobileBottomNav = mainNav.filter(item => item.href !== "/ai-producer");
+const mobileBottomNav = mainNav;
 
 function exportData(state: object) {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -255,7 +254,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     ? profileName.trim().split(/\s+/).map((word: string) => word[0]).join("").toUpperCase().slice(0, 2)
     : "IN";
   const avatarUrl = state.profile?.avatarUrl;
-  const isAiProducerActive = location === "/ai-producer" || location.startsWith("/ai-producer/");
   const isSettingsActive = location === "/settings";
 
   const isActiveRoute = (item: typeof mainNav[number]) => item.href === "/"
@@ -286,30 +284,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-full w-full rounded-full" />
           </Link>
 
-          <div className="mx-auto grid h-14 w-full max-w-[18rem] grid-cols-2 rounded-[1.75rem] bg-white/[0.045] p-1.5 shadow-[0_18px_46px_hsl(0_0%_0%/.12)]">
+          <div className="mx-auto flex h-14 w-full max-w-[18rem] items-center justify-center rounded-[1.75rem] bg-white/[0.045] p-1.5 shadow-[0_18px_46px_hsl(0_0%_0%/.12)]">
             <Link
               href="/"
               aria-label="Influera"
-              className={cn(
-                "flex items-center justify-center rounded-[1.35rem] transition-all",
-                !isAiProducerActive
-                  ? "bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)]"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              className="flex h-full w-full items-center justify-center rounded-[1.35rem] bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)] transition-all"
             >
-              <AppLogo size="sm" unlinked className={cn(!isAiProducerActive && "brightness-0")} />
-            </Link>
-            <Link
-              href="/ai-producer"
-              aria-label="AI Producer"
-              className={cn(
-                "flex items-center justify-center rounded-[1.35rem] transition-all",
-                isAiProducerActive
-                  ? "bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)]"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Bot className="h-6 w-6" />
+              <AppLogo size="sm" unlinked className="brightness-0" />
             </Link>
           </div>
 
