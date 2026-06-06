@@ -56,9 +56,10 @@ function scriptTextFromRows(rows?: IdeaScriptRow[]) {
 export default function IdeaDetail() {
   const [, params] = useRoute("/app/ideas/:id");
   const [, setLocation] = useLocation();
-  const { state, updateIdea, deleteIdea, addPublication } = useStore();
+  const { state, ready, updateIdea, deleteIdea, addPublication } = useStore();
   const { toast } = useToast();
-  const idea = state.ideas.find(item => item.id === params?.id);
+  const ideaId = params?.id;
+  const idea = state.ideas.find(item => item.id === ideaId);
   const linkedPublications = useMemo(
     () => idea ? getPublicationsForIdea(state.publications, idea.id) : [],
     [idea, state.publications],
@@ -103,6 +104,11 @@ export default function IdeaDetail() {
       tags: formatTagsInput(idea.tags),
     });
   }, [idea, mainPlatforms]);
+
+  // Пока хранилище ещё грузится — не показываем ошибку, ждём
+  if (!idea && !ready) {
+    return null;
+  }
 
   if (!idea) {
     return (

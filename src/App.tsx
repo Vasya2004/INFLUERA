@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { StoreProvider } from "@/lib/store";
 import { AppGate } from "@/components/app/app-shell";
+import { ErrorBoundary } from "@/components/app/error-boundary";
 import { MainLayout } from "@/components/layout/main-layout";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
@@ -35,6 +36,7 @@ const queryClient = new QueryClient({
 function AppRouter() {
   return (
     <MainLayout>
+      <ErrorBoundary>
       <Switch>
         <Route path="/app" component={Dashboard} />
         <Route path="/app/goals" component={Goals} />
@@ -49,6 +51,7 @@ function AppRouter() {
         <Route path="/app/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
+      </ErrorBoundary>
     </MainLayout>
   );
 }
