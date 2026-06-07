@@ -190,6 +190,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const cloudSyncRef = useRef<ReturnType<typeof createCloudSync> | null>(null);
   const lastResumeRefreshRef = useRef(0);
   const resumeRefreshInFlightRef = useRef(false);
+  const pendingCloudWritesRef = useRef(0);
   const syncStatusRef = useRef<SyncStatus>("idle");
   const workspaceCache = useWorkspaceCache(user?.id);
 
@@ -203,10 +204,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const persist = (task: () => Promise<void>) => {
     if (!cloudSyncRef.current) return;
+    pendingCloudWritesRef.current += 1;
     setSyncStatus("saving");
     task()
-      .then(() => setSyncStatus("saved"))
-      .catch(() => setSyncStatus("error"));
+      .then(() => {
+        pendingCloudWritesRef.current = Math.max(0, pendingCloudWritesRef.current - 1);
+        if (pendingCloudWritesRef.current === 0) setSyncStatus("saved");
+      })
+      .catch(() => {
+        pendingCloudWritesRef.current = Math.max(0, pendingCloudWritesRef.current - 1);
+        setSyncStatus("error");
+      });
   };
 
   const applyUpdate = (
@@ -317,7 +325,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       if (document.visibilityState !== "visible") return;
       if (resumeRefreshInFlightRef.current) return;
+      if (pendingCloudWritesRef.current > 0) return;
       if (syncStatusRef.current === "saving") return;
+      if (syncStatusRef.current === "error") return;
 
       const now = Date.now();
       if (!force && now - lastResumeRefreshRef.current < RESUME_REFRESH_INTERVAL_MS) return;
