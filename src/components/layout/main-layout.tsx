@@ -304,13 +304,16 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain">
-          <div className="mx-auto min-h-full w-full max-w-[1680px] px-3 py-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:px-5 sm:py-5 sm:pb-[calc(env(safe-area-inset-bottom)+6rem)] md:p-6 md:pb-6 xl:p-8">
+          <div className="mx-auto min-h-full w-full max-w-[1680px] px-3 py-4 pb-[calc(env(safe-area-inset-bottom)+4.75rem)] sm:px-5 sm:py-5 sm:pb-[calc(env(safe-area-inset-bottom)+5rem)] md:p-6 md:pb-6 xl:p-8">
             {children}
           </div>
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-card/90 md:hidden">
-          <div className="mx-auto grid w-full max-w-lg grid-cols-5 gap-0.5">
+        <nav
+          aria-label="Основная навигация"
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] md:hidden"
+        >
+          <div className="pointer-events-auto mx-auto grid w-full max-w-[28rem] grid-cols-5 gap-1 rounded-[1.75rem] border border-border/80 bg-card/95 p-1.5 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.18),0_2px_8px_-2px_rgba(0,0,0,0.08)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/88 dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.55),0_2px_8px_-2px_rgba(0,0,0,0.35)]">
             {mobileBottomNav.map(item => {
               const Icon = item.icon;
               const active = isActiveRoute(item);
@@ -322,14 +325,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   aria-label={item.name}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium leading-none transition-colors",
+                    "flex min-h-[3.125rem] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1.5 text-[10px] font-medium leading-none transition-all",
                     active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground active:bg-muted/60",
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground active:scale-95 active:bg-muted/60",
                   )}
                 >
                   <Icon className="h-5 w-5 shrink-0" />
-                  <span className="max-w-full truncate">{label}</span>
+                  <span className="max-w-full truncate px-0.5">{label}</span>
                 </Link>
               );
             })}
