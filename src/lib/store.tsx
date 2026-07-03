@@ -13,6 +13,7 @@ import {
 import { parseAppState } from "./app-state-schema";
 import { migrateTemplateCategory } from "./template-utils";
 import { ensurePublicationChecklist, migrateContentFormat, migratePublicationStatus } from "./content-plan-utils";
+import { migrateIdeaStatus } from "./ideas-utils";
 import { distributeAudienceTotal, ensurePrimaryGoal, syncAudienceGoals } from "./primary-goal";
 import { migratePlatformRole, sanitizePlatforms } from "./platform-utils";
 import { createDemoAppState } from "./demo-seed";
@@ -87,6 +88,7 @@ export function normalizeState(data: AppState): AppState {
     ideas: (data.ideas ?? []).map(i => ({
       ...i,
       format: migrateContentFormat(i.format),
+      status: migrateIdeaStatus(i.status),
     })),
     checkpoints: data.checkpoints ?? [],
     references: data.references ?? [],
@@ -563,8 +565,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const updatePublication = (p: Publication) =>
     applyUpdate(
-      s => ({ ...s, publications: s.publications.map(x => x.id === p.id ? p : x) }),
-      () => () => cloudSyncRef.current!.savePublication(p),
+      s => ({
+        ...s,
+        publications: s.publications.map(x => x.id === p.id ? p : x),
+        ideas: p.status === "опубликовано" && p.ideaId
+          ? s.ideas.map(idea => idea.id === p.ideaId ? { ...idea, status: "опубликовано" as const } : idea)
+          : s.ideas,
+      }),
+      (next) => {
+        const linkedIdea = p.status === "опубликовано" && p.ideaId
+          ? next.ideas.find(idea => idea.id === p.ideaId)
+          : undefined;
+        return () => {
+          const sync = cloudSyncRef.current!;
+          const tasks = [sync.savePublication(p)];
+          if (linkedIdea) tasks.push(sync.saveIdea(linkedIdea));
+          return Promise.all(tasks).then(() => undefined);
+        };
+      },
     );
 
   const deletePublication = (id: string) =>

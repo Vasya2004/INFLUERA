@@ -1,8 +1,8 @@
 import { LucideIcon } from "lucide-react";
 import { ReactNode } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { GlowDecor, type GlowAccent } from "@/components/app/glow-decor";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageHeader({
@@ -15,18 +15,18 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="relative">
-      <div className="pointer-events-none absolute -left-16 -top-20 h-44 w-44 rounded-full bg-primary/16 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-violet-500/10 blur-3xl" />
-      <div className="relative flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl break-words">{title}</h1>
-          {description && (
-            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
-          )}
-        </div>
-        {action}
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-2xl font-bold tracking-tight break-words sm:text-3xl">{title}</h1>
+        {description && (
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+        )}
       </div>
+      {action && (
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+          {action}
+        </div>
+      )}
     </div>
   );
 }
@@ -37,27 +37,37 @@ export function SectionPanel({
   action,
   children,
   className,
-  accent = "primary",
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
-  accent?: GlowAccent;
 }) {
   return (
-    <section className={cn("glass-card electric-line relative overflow-hidden rounded-3xl", className)}>
-      <GlowDecor accent={accent} />
-      <div className="relative flex items-center justify-between gap-3 border-b border-border/70 px-5 py-4 dark:border-white/10">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold">{title}</h2>
+    <section className={cn("surface-card relative overflow-hidden rounded-xl", className)}>
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 sm:gap-3 sm:px-5 sm:py-4">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold leading-snug">{title}</h2>
           {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
         </div>
-        {action}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
-      <div className="relative">{children}</div>
+      <div>{children}</div>
     </section>
+  );
+}
+
+export function PanelAction({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 shrink-0 border-border bg-muted/50 px-3 text-xs font-medium text-foreground shadow-none hover:bg-muted/80"
+      asChild
+    >
+      <Link href={href}>{children}</Link>
+    </Button>
   );
 }
 
@@ -75,10 +85,9 @@ export function EmptyState({
   onAction?: () => void;
 }) {
   return (
-    <section className="glass-card electric-line relative overflow-hidden rounded-3xl">
-      <GlowDecor accent="primary" intensity="soft" />
-      <div className="relative flex flex-col items-center justify-center px-6 py-20 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/25 bg-primary/12 text-primary shadow-[0_0_34px_hsl(var(--primary)/0.22)]">
+    <section className="surface-card relative overflow-hidden rounded-xl">
+      <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-muted/50 text-primary">
           <Icon className="h-7 w-7" />
         </div>
         <h3 className="mb-1 text-lg font-semibold">{title}</h3>
@@ -106,9 +115,9 @@ export function PageSkeleton({
       )}
       <div className="grid gap-4 md:grid-cols-2">
         {Array.from({ length: rows }).map((_, index) => (
-          <div key={index} className="glass-card rounded-3xl p-5">
+          <div key={index} className="surface-card rounded-xl p-5">
             <div className="flex items-start gap-3">
-              <Skeleton className="h-10 w-10 shrink-0 rounded-2xl" />
+              <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
               <div className="min-w-0 flex-1 space-y-2">
                 <Skeleton className="h-5 w-3/4 rounded-lg" />
                 <Skeleton className="h-4 w-full rounded-lg" />

@@ -2,6 +2,7 @@ import {
   parsePublicationChecklist,
   serializePublicationChecklist,
 } from "../content-plan-utils";
+import { migrateIdeaStatus } from "../ideas-utils";
 import type {
   Checkpoint,
   CreatorReference,
@@ -191,7 +192,7 @@ export function mapIdea(row: IdeaRow): Idea {
     format: row.format as Idea["format"],
     platformId: row.platform_id ?? undefined,
     priority: row.priority as Idea["priority"],
-    status: row.status as Idea["status"],
+    status: migrateIdeaStatus(row.status),
     createdAt: row.created_at,
     tags: row.tags ?? [],
   };

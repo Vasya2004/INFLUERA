@@ -231,19 +231,20 @@
     height: 100%;
     min-width: 0;
     overflow: hidden;
-    background:
-      radial-gradient(circle at 12% -10%, hsl(213 100% 70% / .28), transparent 31rem),
-      radial-gradient(circle at 92% 8%, hsl(246 92% 70% / .18), transparent 28rem),
-      radial-gradient(circle at 45% 112%, hsl(172 82% 56% / .12), transparent 34rem),
-      hsl(var(--background));
+    background: hsl(var(--background));
   }
 
-  .dark body {
-    background:
-      radial-gradient(circle at 12% -10%, hsl(213 100% 58% / .28), transparent 31rem),
-      radial-gradient(circle at 92% 8%, hsl(246 92% 64% / .24), transparent 28rem),
-      radial-gradient(circle at 45% 112%, hsl(172 82% 46% / .11), transparent 34rem),
-      hsl(var(--background));
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(ellipse 72% 48% at 0% 0%, hsl(213 100% 70% / .07), transparent);
+  }
+
+  .dark body::before {
+    background: radial-gradient(ellipse 72% 48% at 0% 0%, hsl(213 100% 58% / .09), transparent);
   }
 
   :focus-visible {
@@ -268,19 +269,22 @@
 
 @layer components {
   .app-shell {
-    background:
-      radial-gradient(42rem 34rem at 2% -8%, hsl(213 100% 70% / .18), transparent 72%),
-      radial-gradient(46rem 36rem at 106% 0%, hsl(246 92% 70% / .13), transparent 74%),
-      radial-gradient(42rem 32rem at 48% 110%, hsl(172 82% 56% / .08), transparent 72%),
-      hsl(var(--background));
+    background: transparent;
   }
 
-  .dark .app-shell {
-    background:
-      radial-gradient(44rem 34rem at 2% -8%, hsl(213 100% 58% / .18), transparent 72%),
-      radial-gradient(48rem 36rem at 106% 0%, hsl(246 92% 64% / .18), transparent 74%),
-      radial-gradient(44rem 34rem at 48% 110%, hsl(172 82% 46% / .08), transparent 72%),
-      hsl(var(--background));
+  .surface-card {
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-sm);
+  }
+
+  .surface-card-interactive {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .surface-card-interactive:hover {
+    border-color: hsl(var(--border));
+    box-shadow: var(--shadow-md);
   }
 
   .glass-card {
@@ -308,16 +312,15 @@
   }
 
   .glass-sidebar {
-    border-color: hsl(var(--border) / .72);
-    background: hsl(var(--sidebar) / .78);
-    box-shadow: 18px 0 70px hsl(213 100% 32% / .08);
-    backdrop-filter: blur(24px);
+    border-color: hsl(var(--border));
+    background: hsl(var(--sidebar));
+    box-shadow: none;
   }
 
   .dark .glass-sidebar {
-    border-color: hsl(0 0% 100% / .10);
-    background: hsl(var(--sidebar) / .78);
-    box-shadow: 18px 0 80px hsl(0 0% 0% / .30);
+    border-color: hsl(var(--border));
+    background: hsl(var(--sidebar));
+    box-shadow: none;
   }
 
   .electric-line {
@@ -334,53 +337,6 @@
     pointer-events: none;
   }
 
-  .page-content-ambient {
-    position: relative;
-    isolation: isolate;
-  }
-
-  .page-content-ambient::before {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    right: -6rem;
-    top: 28%;
-    z-index: -1;
-    height: 22rem;
-    width: 22rem;
-    border-radius: 9999px;
-    background: hsl(213 100% 58% / .12);
-    filter: blur(64px);
-  }
-
-  .page-content-ambient::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    left: -5rem;
-    bottom: 8%;
-    z-index: -1;
-    height: 18rem;
-    width: 18rem;
-    border-radius: 9999px;
-    background: hsl(263 92% 64% / .10);
-    filter: blur(56px);
-  }
-
-  @media (max-width: 767px) {
-    .page-content-ambient::before {
-      right: -10rem;
-      width: 18rem;
-      height: 18rem;
-    }
-
-    .page-content-ambient::after {
-      left: -10rem;
-      width: 16rem;
-      height: 16rem;
-    }
-  }
-
   .glass-card-interactive {
     position: relative;
     overflow: hidden;
@@ -388,12 +344,12 @@
   }
 
   .glass-card-interactive:hover {
-    border-color: hsl(var(--primary) / .35);
-    box-shadow: var(--shadow-lg), 0 0 48px hsl(var(--primary) / .12);
+    border-color: hsl(var(--border));
+    box-shadow: var(--shadow-md);
   }
 
   .dark .glass-card-interactive:hover {
-    box-shadow: 0 22px 70px hsl(0 0% 0% / .34), 0 0 52px hsl(var(--primary) / .14);
+    box-shadow: var(--shadow-md);
   }
 
   .safe-wrap {

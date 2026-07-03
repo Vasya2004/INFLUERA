@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Pencil, Plus, Trash2, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { SegmentedControl } from "@/components/app/segmented-control";
 
 const PERIOD_OPTIONS: { value: MetricPeriodDays; label: string }[] = [
   { value: 7, label: "7 дней" },
@@ -174,21 +174,12 @@ export function PlatformMetricsPanel({ platform, accent, goals }: PlatformMetric
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl border border-border/70 bg-background/80 p-1">
-            {PERIOD_OPTIONS.map(option => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setPeriod(option.value)}
-                className={cn(
-                  "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
-                  period === option.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            value={String(period)}
+            onChange={value => setPeriod(Number(value) as MetricPeriodDays)}
+            options={PERIOD_OPTIONS.map(option => ({ value: String(option.value), label: option.label }))}
+            aria-label="Период метрик"
+          />
           <Button type="button" size="sm" variant="outline" className="rounded-xl" onClick={openAddMetric}>
             <Plus className="mr-1.5 h-3.5 w-3.5" />
             Запись

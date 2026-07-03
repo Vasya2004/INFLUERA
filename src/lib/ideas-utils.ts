@@ -1,27 +1,46 @@
 import type { Idea, IdeaStatus, Priority, Publication } from "./types";
 
-export const IDEA_STATUSES: IdeaStatus[] = [
+export const IDEA_PIPELINE: IdeaStatus[] = [
   "новая",
-  "в работе",
-  "превращена в публикацию",
-  "отложена",
-  "архив",
+  "сценарий",
+  "монтаж",
+  "опубликовано",
 ];
 
-export const IDEA_KANBAN_COLUMNS: IdeaStatus[] = [
-  "новая",
-  "в работе",
-  "превращена в публикацию",
-  "отложена",
-];
+export const IDEA_STATUSES = IDEA_PIPELINE;
+
+export const IDEA_KANBAN_COLUMNS = IDEA_PIPELINE;
 
 export const IDEA_STATUS_LABELS: Record<IdeaStatus, string> = {
   "новая": "Новая",
-  "в работе": "В работе",
-  "превращена в публикацию": "В плане",
-  "отложена": "Отложена",
-  "архив": "Архив",
+  "сценарий": "Сценарий",
+  "монтаж": "Монтаж",
+  "опубликовано": "Опубликовано",
 };
+
+const LEGACY_IDEA_STATUS_MAP: Record<string, IdeaStatus> = {
+  "в работе": "сценарий",
+  "превращена в публикацию": "монтаж",
+  "отложена": "новая",
+  "архив": "опубликовано",
+};
+
+export function migrateIdeaStatus(status: string): IdeaStatus {
+  if (IDEA_PIPELINE.includes(status as IdeaStatus)) {
+    return status as IdeaStatus;
+  }
+  return LEGACY_IDEA_STATUS_MAP[status] ?? "новая";
+}
+
+export function getIdeaStatusIndex(status: IdeaStatus) {
+  return IDEA_PIPELINE.indexOf(status);
+}
+
+export function getNextIdeaStatus(status: IdeaStatus): IdeaStatus | null {
+  const index = getIdeaStatusIndex(status);
+  if (index < 0 || index >= IDEA_PIPELINE.length - 1) return null;
+  return IDEA_PIPELINE[index + 1] ?? null;
+}
 
 export type IdeaSortMode = "newest" | "priority" | "status" | "in_plan";
 
@@ -32,7 +51,7 @@ export type IdeaFilterState = {
   platformId: string;
   format: string;
   inPlan: "все" | "в_плане" | "не_в_плане";
-  hideArchive: boolean;
+  hidePublished: boolean;
 };
 
 export type IdeasViewMode = "grid" | "kanban";
@@ -45,10 +64,9 @@ const PRIORITY_WEIGHT: Record<Priority, number> = {
 
 const STATUS_WEIGHT: Record<IdeaStatus, number> = {
   "новая": 0,
-  "в работе": 1,
-  "превращена в публикацию": 2,
-  "отложена": 3,
-  "архив": 4,
+  "сценарий": 1,
+  "монтаж": 2,
+  "опубликовано": 3,
 };
 
 export function getPublicationsForIdea(publications: Publication[], ideaId: string) {
@@ -79,8 +97,9 @@ export function filterIdeas(
   const query = filters.search.trim().toLowerCase();
 
   return ideas.filter(idea => {
-    if (filters.hideArchive && idea.status === "архив") return false;
-    if (filters.status !== "все" && idea.status !== filters.status) return false;
+    const normalizedStatus = migrateIdeaStatus(idea.status);
+    if (filters.hidePublished && normalizedStatus === "опубликовано") return false;
+    if (filters.status !== "все" && normalizedStatus !== filters.status) return false;
     if (filters.priority !== "все" && idea.priority !== filters.priority) return false;
     if (filters.platformId !== "все" && idea.platformId !== filters.platformId) return false;
     if (filters.format !== "все" && idea.format !== filters.format) return false;
@@ -120,7 +139,7 @@ export function sortIdeas(
     }
 
     if (sortMode === "status") {
-      const statusDiff = STATUS_WEIGHT[a.status] - STATUS_WEIGHT[b.status];
+      const statusDiff = STATUS_WEIGHT[migrateIdeaStatus(a.status)] - STATUS_WEIGHT[migrateIdeaStatus(b.status)];
       if (statusDiff !== 0) return statusDiff;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
@@ -140,9 +159,9 @@ export function groupIdeasByStatus(ideas: Idea[]) {
     groups.set(status, []);
   }
   for (const idea of ideas) {
-    if (idea.status === "архив") continue;
-    const bucket = groups.get(idea.status);
-    if (bucket) bucket.push(idea);
+    const status = migrateIdeaStatus(idea.status);
+    const bucket = groups.get(status);
+    if (bucket) bucket.push({ ...idea, status });
   }
   return groups;
 }

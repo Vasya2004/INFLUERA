@@ -615,7 +615,7 @@ export function Platforms({ embedded = false }: { embedded?: boolean }) {
         <PageHeader
           title="Платформы"
           action={
-            <Button onClick={openAdd} data-testid="button-add-platform">
+            <Button onClick={openAdd} className="w-full sm:w-auto" data-testid="button-add-platform">
             <Plus className="mr-2 h-4 w-4" />Добавить платформу
             </Button>
           }
@@ -623,13 +623,13 @@ export function Platforms({ embedded = false }: { embedded?: boolean }) {
       )}
       {embedded && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Платформы</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold tracking-tight sm:text-lg">Платформы</h2>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
               Площадки, аудитория, цели роста и ритм публикаций.
             </p>
           </div>
-          <Button onClick={openAdd} data-testid="button-add-platform">
+          <Button onClick={openAdd} className="w-full sm:w-auto" data-testid="button-add-platform">
             <Plus className="mr-2 h-4 w-4" />Добавить платформу
           </Button>
         </div>

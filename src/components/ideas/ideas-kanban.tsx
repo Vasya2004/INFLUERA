@@ -20,7 +20,7 @@ export function IdeasKanban({
         return (
           <div
             key={status}
-            className="flex w-[min(100%,20rem)] shrink-0 flex-col rounded-2xl border border-border/80 bg-muted/15"
+            className="flex w-[min(100%,20rem)] shrink-0 flex-col rounded-xl border border-border bg-muted/30"
           >
             <div className="border-b border-border/70 px-3 py-2.5">
               <div className="flex items-center justify-between gap-2">

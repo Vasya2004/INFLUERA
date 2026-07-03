@@ -40,9 +40,9 @@ const REFERENCE_TYPES: CreatorReferenceType[] = ["блогер", "эксперт
 const REFERENCE_PLATFORMS = ["Instagram", "Telegram", "YouTube", "TikTok", "VK", "X", "Сайт", "Подкаст", "Другое"];
 
 const TYPE_STYLES: Record<CreatorReferenceType, string> = {
-  блогер: "border-sky-400/30 bg-sky-500/10 text-sky-200",
-  эксперт: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
-  бренд: "border-violet-400/30 bg-violet-500/10 text-violet-200",
+  блогер: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  эксперт: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+  бренд: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300",
 };
 
 function parseTagsInput(value: string) {
@@ -272,19 +272,19 @@ export function References({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className={cn("space-y-5", !embedded && "space-y-8")}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight">Референсы</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold tracking-tight sm:text-lg">Референсы</h2>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Блогеры, эксперты и бренды, на которые можно ориентироваться.
           </p>
         </div>
-        <Button onClick={openAdd} data-testid="button-add-reference">
+        <Button onClick={openAdd} className="w-full sm:w-auto" data-testid="button-add-reference">
           <Plus className="mr-2 h-4 w-4" />Добавить референс
         </Button>
       </div>
 
       <div className="rounded-2xl border border-border/80 bg-card/70 p-3">
-        <div className="grid gap-2 lg:grid-cols-[1fr_180px_180px_auto]">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_auto]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9" placeholder="Поиск" value={search} onChange={event => setSearch(event.target.value)} />

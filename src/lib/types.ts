@@ -38,7 +38,7 @@ export interface Goal {
   isPrimary?: boolean;
 }
 
-export type IdeaStatus = "новая" | "в работе" | "превращена в публикацию" | "отложена" | "архив";
+export type IdeaStatus = "новая" | "сценарий" | "монтаж" | "опубликовано";
 export type ContentFormat = "Reels/Shorts/TikTok" | "пост" | "карусель" | "Telegram-пост" | "видео" | "сторис";
 export type Priority = "высокий" | "средний" | "низкий";
 export type IdeaScriptMode = "video" | "post";

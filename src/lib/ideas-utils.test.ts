@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Idea, Publication } from "./types";
-import { filterIdeas, getPublicationsForIdea, parseTagsInput, sortIdeas } from "./ideas-utils";
+import {
+  filterIdeas,
+  getPublicationsForIdea,
+  migrateIdeaStatus,
+  parseTagsInput,
+  sortIdeas,
+} from "./ideas-utils";
 
 const baseIdea = (overrides: Partial<Idea>): Idea => ({
   id: "i1",
@@ -18,10 +24,16 @@ describe("ideas-utils", () => {
     expect(parseTagsInput("ux, #карусель; reels")).toEqual(["ux", "карусель", "reels"]);
   });
 
-  it("filters ideas by plan state and archive", () => {
+  it("migrates legacy idea statuses", () => {
+    expect(migrateIdeaStatus("в работе")).toBe("сценарий");
+    expect(migrateIdeaStatus("архив")).toBe("опубликовано");
+    expect(migrateIdeaStatus("монтаж")).toBe("монтаж");
+  });
+
+  it("filters ideas by plan state and published status", () => {
     const ideas = [
       baseIdea({ id: "i1", status: "новая" }),
-      baseIdea({ id: "i2", status: "архив" }),
+      baseIdea({ id: "i2", status: "опубликовано" }),
     ];
     const publications: Publication[] = [{
       id: "p1",
@@ -40,7 +52,7 @@ describe("ideas-utils", () => {
       platformId: "все",
       format: "все",
       inPlan: "в_плане",
-      hideArchive: true,
+      hidePublished: true,
     });
 
     expect(filtered).toHaveLength(1);

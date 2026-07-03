@@ -14,7 +14,6 @@ import { goalProgress, isSubscriberGoalSynced } from "@/lib/primary-goal";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { EmptyState, PageHeader } from "@/components/app/page";
-import { GlowDecor } from "@/components/app/glow-decor";
 
 const GOAL_TYPES: GoalType[] = ["подписчики", "частота публикаций", "доход", "другое"];
 
@@ -298,16 +297,11 @@ function GoalCard({
         className={cn(
           "group flex h-full flex-col transition-colors",
           isPrimary
-            ? "border-primary/45 bg-gradient-to-br from-primary/14 via-primary/6 to-transparent shadow-[0_0_44px_hsl(var(--primary)/0.14)] ring-1 ring-primary/25 hover:border-primary/55"
-            : "hover:border-primary/40",
+            ? "border-primary/30 bg-primary/[0.04] ring-1 ring-primary/15"
+            : "hover:border-border",
         )}
       >
-        {isPrimary ? (
-          <GlowDecor accent="primary" intensity="strong" />
-        ) : (
-          <GlowDecor accent="violet" intensity="soft" />
-        )}
-        <CardHeader className="relative pb-3">
+        <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 space-y-1.5">
               <div className="flex flex-wrap items-center gap-1.5">
@@ -362,7 +356,7 @@ function GoalCard({
                 <span className="font-semibold tabular-nums text-foreground">{goal.currentValue.toLocaleString("ru-RU")}</span>
               )}
             </div>
-            <Progress value={progress} className={cn("h-2", isPrimary && "[&>div]:bg-primary")} />
+            <Progress value={progress} className="h-2 bg-emerald-500/15 [&>div]:bg-emerald-500" />
             <p className="text-xs text-muted-foreground">{Math.round(progress)}% выполнено</p>
           </div>
 
@@ -395,11 +389,11 @@ export default function Goals() {
   function openEdit(g: Goal) { setEditGoal(g); setDialogOpen(true); }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="Цели"
         action={
-          <Button onClick={openAdd} data-testid="button-add-goal">
+          <Button onClick={openAdd} className="w-full sm:w-auto" data-testid="button-add-goal">
             <Plus className="mr-2 h-4 w-4" />Добавить цель
           </Button>
         }

@@ -264,15 +264,15 @@ export default function ContentPlan() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Контент-план"
         action={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => { setEditCheckpoint(undefined); setCheckpointDialogOpen(true); }}>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setEditCheckpoint(undefined); setCheckpointDialogOpen(true); }}>
               <Flag className="mr-2 h-4 w-4" />Чекпоинт
             </Button>
-            <Button onClick={() => openAddPub()}>
+            <Button className="w-full sm:w-auto" onClick={() => openAddPub()}>
               <Plus className="mr-2 h-4 w-4" />Запланировать
             </Button>
           </div>
@@ -322,7 +322,7 @@ export default function ContentPlan() {
             </Button>
           )}
         </div>
-        <div className="hidden w-full grid-cols-3 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm md:grid md:w-auto">
+        <div className="grid w-full grid-cols-3 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm sm:w-auto">
           {VIEW_OPTIONS.map(option => {
             const Icon = option.icon;
             return (
@@ -343,15 +343,15 @@ export default function ContentPlan() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
           {FILTER_OPTIONS.map(option => (
             <button
               key={option.value}
               type="button"
               onClick={() => setFilters(current => ({ ...current, status: option.value }))}
               className={cn(
-                "min-h-9 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all",
+                "min-h-9 shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all",
                 filters.status === option.value
                   ? "border-primary/30 bg-primary text-primary-foreground"
                   : "border-border/70 bg-secondary/80 text-secondary-foreground hover:bg-secondary",
@@ -362,7 +362,7 @@ export default function ContentPlan() {
           ))}
         </div>
         <Select value={filters.platformId} onValueChange={value => setFilters(current => ({ ...current, platformId: value }))}>
-          <SelectTrigger className="min-h-10 w-auto min-w-40 rounded-xl">
+          <SelectTrigger className="min-h-10 w-full rounded-xl sm:w-auto sm:min-w-40">
             <SelectValue placeholder="Платформа" />
           </SelectTrigger>
           <SelectContent>
@@ -374,7 +374,7 @@ export default function ContentPlan() {
         </Select>
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("min-h-10 rounded-xl", activeAdvancedFilters && "border-primary/40 bg-primary/5")}>
+            <Button variant="outline" className={cn("min-h-10 w-full rounded-xl sm:w-auto", activeAdvancedFilters && "border-primary/40 bg-primary/5")}>
               <Filter className="mr-2 h-4 w-4" />
               Фильтры
             </Button>

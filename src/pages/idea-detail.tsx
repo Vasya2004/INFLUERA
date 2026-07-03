@@ -3,7 +3,15 @@ import { Link, useLocation, useRoute } from "wouter";
 import type { ContentFormat, IdeaScriptMode, IdeaScriptRow, IdeaStatus, Priority, PublicationStatus } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import { CONTENT_FORMATS, DEFAULT_PUBLICATION_CHECKLIST, STATUS_LABELS } from "@/lib/content-plan-utils";
-import { IDEA_STATUSES, IDEA_STATUS_LABELS, formatTagsInput, getPublicationsForIdea, parseTagsInput } from "@/lib/ideas-utils";
+import {
+  IDEA_STATUS_LABELS,
+  formatTagsInput,
+  getPublicationsForIdea,
+  getNextIdeaStatus,
+  migrateIdeaStatus,
+  parseTagsInput,
+} from "@/lib/ideas-utils";
+import { IdeaStatusPath, ideaStatusBadgeClass } from "@/components/ideas/idea-status-path";
 import { PlanFromIdeaDialog } from "@/components/content-plan/plan-from-idea-dialog";
 import { EmptyState, PageHeader } from "@/components/app/page";
 import { Button } from "@/components/ui/button";
@@ -25,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Archive, ArrowLeft, CalendarPlus, ExternalLink, FileText, Lightbulb, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarPlus, ExternalLink, FileText, Lightbulb, Save, Trash2 } from "lucide-react";
 import { PlatformAvatar } from "@/components/app/platform-avatar";
 
 const PRIORITIES: Priority[] = ["высокий", "средний", "низкий"];
@@ -99,7 +107,7 @@ export default function IdeaDetail() {
       scriptMode: "post",
       format: idea.format,
       priority: idea.priority,
-      status: idea.status,
+      status: migrateIdeaStatus(idea.status),
       platformId: idea.platformId && mainPlatforms.some(item => item.id === idea.platformId) ? idea.platformId : "any",
       tags: formatTagsInput(idea.tags),
     });
@@ -189,23 +197,26 @@ export default function IdeaDetail() {
       ideaId: currentIdea.id,
       checklist: DEFAULT_PUBLICATION_CHECKLIST.map(item => ({ ...item })),
     });
-    if (currentIdea.status !== "архив") {
-      updateIdea({ ...currentIdea, status: "превращена в публикацию" });
-      setForm(current => ({ ...current, status: "превращена в публикацию" }));
+    const nextStatus = form.status === "новая" ? "сценарий" as const : form.status;
+    if (nextStatus !== form.status) {
+      updateIdea({ ...currentIdea, status: nextStatus });
+      setForm(current => ({ ...current, status: nextStatus }));
     }
     toast({
       title: "Публикация создана",
-      description: `Идея ушла из активного списка и теперь находится в разделе «В плане».`,
+      description: "Идея связана с публикацией в контент-плане.",
     });
   }
 
-  function archiveIdea() {
-    updateIdea({ ...currentIdea, status: "архив" });
+  function advanceStatus() {
+    const next = getNextIdeaStatus(form.status);
+    if (!next) return;
+    setForm(current => ({ ...current, status: next }));
+    updateIdea({ ...currentIdea, status: next });
     toast({
-      title: "Идея отправлена в архив",
-      description: "Она больше не будет показываться среди активных идей.",
+      title: `Этап: ${IDEA_STATUS_LABELS[next]}`,
+      description: "Статус идеи обновлён.",
     });
-    setLocation("/app/ideas");
   }
 
   function confirmDelete() {
@@ -215,24 +226,43 @@ export default function IdeaDetail() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       <PageHeader
         title={currentIdea.title}
         action={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" asChild>
               <Link href="/app/ideas">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Назад
               </Link>
             </Button>
-            <Button onClick={saveIdea}>
+            <Button size="sm" className="flex-1 sm:flex-none" onClick={saveIdea}>
               <Save className="mr-2 h-4 w-4" />
               Сохранить
             </Button>
           </div>
         }
       />
+
+      <Card className="surface-card rounded-xl">
+        <CardContent className="space-y-3 p-4 sm:space-y-4 sm:p-5">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold">Путь идеи</p>
+            <p className="text-xs text-muted-foreground">
+              От замысла до публикации. Нажмите на этап, чтобы изменить статус.
+            </p>
+          </div>
+          <IdeaStatusPath
+            value={form.status}
+            onChange={status => {
+              setForm(current => ({ ...current, status }));
+              updateIdea({ ...currentIdea, status });
+            }}
+            compact
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-4">
@@ -277,17 +307,6 @@ export default function IdeaDetail() {
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label>Статус</Label>
-                  <Select value={form.status} onValueChange={value => set("status", value as IdeaStatus)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {IDEA_STATUSES.map(status => (
-                        <SelectItem key={status} value={status}>{IDEA_STATUS_LABELS[status]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-1.5">
                   <Label>Приоритет</Label>
                   <Select value={form.priority} onValueChange={value => set("priority", value as Priority)}>
@@ -334,7 +353,7 @@ export default function IdeaDetail() {
                   value={form.scriptRows[0]?.text ?? ""}
                   rows={12}
                   placeholder="Напишите пост, сценарий или структуру публикации..."
-                  className="min-h-72 resize-y border-border/80 bg-background/70"
+                  className="min-h-48 resize-y border-border/80 bg-background/70 sm:min-h-72"
                   onChange={event => setPostScript(event.target.value)}
                 />
               </div>
@@ -352,10 +371,12 @@ export default function IdeaDetail() {
                 <CalendarPlus className="mr-2 h-4 w-4" />
                 Добавить в контент-план
               </Button>
-              {currentIdea.status !== "архив" && (
-                <Button variant="outline" className="w-full justify-start" onClick={archiveIdea}>
-                  <Archive className="mr-2 h-4 w-4" />
-                  Завершить и скрыть
+              {getNextIdeaStatus(form.status) && (
+                <Button variant="soft" className="w-full justify-start" onClick={advanceStatus}>
+                  <span className="sm:hidden">Следующий этап</span>
+                  <span className="hidden sm:inline">
+                    Перейти к этапу «{IDEA_STATUS_LABELS[getNextIdeaStatus(form.status)!]}»
+                  </span>
                 </Button>
               )}
               <Button variant="outline" className="w-full justify-start" onClick={saveIdea}>
@@ -375,7 +396,7 @@ export default function IdeaDetail() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex flex-wrap gap-1.5">
-                <Badge>{IDEA_STATUS_LABELS[form.status]}</Badge>
+                <Badge className={ideaStatusBadgeClass(form.status)}>{IDEA_STATUS_LABELS[form.status]}</Badge>
                 <Badge variant="outline">{form.priority}</Badge>
                 <Badge variant="outline">{form.format}</Badge>
                 {platform && (

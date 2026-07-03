@@ -402,13 +402,13 @@ export function Templates({ embedded = false }: { embedded?: boolean }) {
       )}
       {embedded && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Материалы</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold tracking-tight sm:text-lg">Материалы</h2>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
               Шаблоны, сценарии, хуки, структуры публикаций и прикреплённые файлы.
             </p>
           </div>
-          <Button onClick={() => setDialogOpen(true)} data-testid="button-add-template">
+          <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto" data-testid="button-add-template">
             <Plus className="mr-2 h-4 w-4" />Добавить материал
           </Button>
         </div>

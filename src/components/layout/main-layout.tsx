@@ -48,7 +48,7 @@ function ProfileAvatar({ avatarUrl, initials, className }: {
 }) {
   return (
     <div className={cn(
-      "shrink-0 overflow-hidden rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_22px_hsl(var(--primary)/0.22)]",
+      "shrink-0 overflow-hidden rounded-xl bg-primary flex items-center justify-center",
       className,
     )}>
       {avatarUrl ? (
@@ -114,11 +114,11 @@ function SidebarContent({
               className={cn(
                 "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 select-none",
                 isActive
-                  ? "bg-primary/12 text-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/.08)] ring-1 ring-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/60 dark:hover:bg-white/[0.05]"
+                  ? "bg-primary/10 text-foreground ring-1 ring-primary/15"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
               )}
             >
-              <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary drop-shadow-[0_0_10px_hsl(var(--primary)/0.38)]" : "text-muted-foreground")} />
+              <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
               {item.name}
             </Link>
           );
@@ -135,14 +135,14 @@ function SidebarContent({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.98 }}
               transition={{ duration: 0.16 }}
-              className="glass-card mb-2 overflow-hidden rounded-3xl"
+              className="surface-card mb-2 overflow-hidden rounded-xl"
             >
               <Link
                 href="/app/profile"
                 onClick={() => { setProfileMenuOpen(false); onNav?.(); }}
                 className="flex items-center gap-3 px-3.5 py-3.5 transition-colors hover:bg-primary/8"
               >
-                <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-9 w-9 shadow-[0_0_24px_hsl(var(--primary)/0.24)]" />
+                <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-9 w-9" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold leading-tight">{profileName || "Твой профиль"}</p>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">{accountLine}</p>
@@ -226,7 +226,7 @@ function SidebarContent({
           type="button"
           onClick={() => setProfileMenuOpen(open => !open)}
           aria-expanded={profileMenuOpen}
-          className="glass-card group flex w-full items-center gap-3 rounded-3xl px-3.5 py-3 text-left transition-all duration-150 hover:border-primary/25 hover:bg-primary/8"
+          className="surface-card group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left transition-all duration-150 hover:bg-muted/50"
         >
           <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-8 w-8" />
           <div className="flex-1 min-w-0">
@@ -272,32 +272,30 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       {/* ── Right side: mobile topbar + content ── */}
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 
-        {/* Mobile top controls */}
-        <header className="sticky top-0 z-30 grid grid-cols-[3.25rem_minmax(0,1fr)_3.25rem] items-center gap-3 bg-transparent px-4 pb-2 pt-3 md:hidden">
+        {/* Mobile top bar */}
+        <header className="sticky top-0 z-30 flex shrink-0 items-center justify-between gap-2 border-b border-border/70 bg-background/95 px-3 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 md:hidden">
           <Link
             href="/app/profile"
             aria-label="Профиль"
-            className="flex h-[3.25rem] w-[3.25rem] items-center justify-center overflow-hidden rounded-full bg-white/[0.045] p-1.5 shadow-[0_14px_34px_hsl(0_0%_0%/.12)] transition-all hover:bg-white/[0.07]"
+            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-card"
           >
-            <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-full w-full rounded-full" />
+            <ProfileAvatar avatarUrl={avatarUrl} initials={initials} className="h-full w-full rounded-xl" />
           </Link>
 
-          <div className="mx-auto flex h-14 w-full max-w-[18rem] items-center justify-center rounded-[1.75rem] bg-white/[0.045] p-1.5 shadow-[0_18px_46px_hsl(0_0%_0%/.12)]">
-            <Link
-              href="/app"
-              aria-label="Influera"
-              className="flex h-full w-full items-center justify-center rounded-[1.35rem] bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)] transition-all"
-            >
-              <AppLogo size="sm" unlinked className="brightness-0" />
-            </Link>
-          </div>
+          <Link
+            href="/app"
+            aria-label="Influera"
+            className="flex min-h-10 min-w-0 flex-1 items-center justify-center rounded-xl px-3"
+          >
+            <AppLogo showWordmark size="xs" unlinked />
+          </Link>
 
           <Link
             href="/app/settings"
             aria-label="Настройки"
             className={cn(
-              "flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-[1.35rem] bg-white/[0.045] shadow-[0_14px_34px_hsl(0_0%_0%/.12)] transition-all hover:bg-white/[0.07]",
-              isSettingsActive && "bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)] hover:bg-primary",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card transition-colors",
+              isSettingsActive && "border-primary/30 bg-primary text-primary-foreground",
             )}
           >
             <Settings className="h-5 w-5" />
@@ -305,14 +303,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="page-content-ambient min-h-full w-full max-w-[1680px] p-4 pb-28 sm:p-6 sm:pb-32 md:p-6 xl:p-8">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain">
+          <div className="mx-auto min-h-full w-full max-w-[1680px] px-3 py-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:px-5 sm:py-5 sm:pb-[calc(env(safe-area-inset-bottom)+6rem)] md:p-6 md:pb-6 xl:p-8">
             {children}
           </div>
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:hidden">
-          <div className="mx-auto grid w-full max-w-md grid-cols-5 gap-1 rounded-3xl border border-border/80 bg-card/92 p-1.5 shadow-2xl backdrop-blur-xl">
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-card/90 md:hidden">
+          <div className="mx-auto grid w-full max-w-lg grid-cols-5 gap-0.5">
             {mobileBottomNav.map(item => {
               const Icon = item.icon;
               const active = isActiveRoute(item);
@@ -322,15 +320,16 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   aria-label={item.name}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition-colors",
+                    "flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium leading-none transition-colors",
                     active
-                      ? "bg-primary text-primary-foreground shadow-[0_10px_30px_hsl(var(--primary)/0.28)]"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground active:bg-muted/60",
                   )}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="leading-none">{label}</span>
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="max-w-full truncate">{label}</span>
                 </Link>
               );
             })}

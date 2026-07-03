@@ -3,19 +3,19 @@ import { useStore } from "@/lib/store";
 import { Idea, IdeaStatus, ContentFormat, Priority } from "@/lib/types";
 import { CONTENT_FORMATS } from "@/lib/content-plan-utils";
 import {
-  IDEA_STATUSES,
   formatTagsInput,
-  isIdeaInPlan,
+  migrateIdeaStatus,
   parseTagsInput,
 } from "@/lib/ideas-utils";
 import { IdeaCard } from "@/components/ideas/idea-card";
+import { IdeasFilters } from "@/components/ideas/ideas-filters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Search, Lightbulb } from "lucide-react";
+import { Plus, Lightbulb } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState, PageHeader } from "@/components/app/page";
 
@@ -128,13 +128,6 @@ function IdeaDialog({ open, onClose, idea, platforms }: {
                 <SelectContent>{PRIORITIES.map(priority => <SelectItem key={priority} value={priority}>{priority}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Статус</Label>
-              <Select value={form.status} onValueChange={value => set("status", value)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{IDEA_STATUSES.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
           </div>
         </div>
         <DialogFooter>
@@ -154,6 +147,7 @@ export default function Ideas() {
   );
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<IdeaStatus | "all">("all");
   const [tagFilter, setTagFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -173,9 +167,9 @@ export default function Ideas() {
 
     return state.ideas
       .filter(idea => {
-        const inPlan = isIdeaInPlan(state.publications, idea.id) || idea.status === "превращена в публикацию";
-
-        if (idea.status === "архив" || inPlan) return false;
+        const status = migrateIdeaStatus(idea.status);
+        if (statusFilter === "all" && status === "опубликовано") return false;
+        if (statusFilter !== "all" && status !== statusFilter) return false;
         if (priorityFilter !== "all" && idea.priority !== priorityFilter) return false;
         if (tagFilter !== "all" && !(idea.tags ?? []).includes(tagFilter)) return false;
 
@@ -187,67 +181,34 @@ export default function Ideas() {
         ].join(" ").toLowerCase().includes(query);
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [state.ideas, state.publications, search, priorityFilter, tagFilter]);
+  }, [state.ideas, search, priorityFilter, statusFilter, tagFilter]);
 
   function openAdd() {
     setDialogOpen(true);
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Идеи"
         action={
-          <Button onClick={openAdd} data-testid="button-add-idea">
+          <Button onClick={openAdd} className="w-full sm:w-auto" data-testid="button-add-idea">
             <Plus className="mr-2 h-4 w-4" />Добавить идею
           </Button>
         }
       />
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-muted/20 p-3">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-          <div className="relative min-w-48 flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Поиск"
-              value={search}
-              onChange={event => setSearch(event.target.value)}
-              data-testid="input-search-ideas"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
-          <Select value={priorityFilter} onValueChange={value => setPriorityFilter(value as Priority | "all")}>
-            <SelectTrigger className="min-h-11 lg:w-[220px]">
-              <SelectValue placeholder="Все приоритеты" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все приоритеты</SelectItem>
-              {PRIORITIES.map(priority => (
-                <SelectItem key={priority} value={priority}>
-                  {priority}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={tagFilter} onValueChange={setTagFilter}>
-            <SelectTrigger className="min-h-11 lg:w-[220px]">
-              <SelectValue placeholder="Все хэштеги" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все хэштеги</SelectItem>
-              {availableTags.map(tag => (
-                <SelectItem key={tag} value={tag}>
-                  {tag.startsWith("#") ? tag : `#${tag}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <IdeasFilters
+        search={search}
+        onSearchChange={setSearch}
+        priorityFilter={priorityFilter}
+        onPriorityFilterChange={setPriorityFilter}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        tagFilter={tagFilter}
+        onTagFilterChange={setTagFilter}
+        availableTags={availableTags}
+      />
 
       {processedIdeas.length === 0 ? (
         <EmptyState
@@ -256,7 +217,7 @@ export default function Ideas() {
           description={
             state.ideas.length === 0
               ? "Собирайте гипотезы для контента. После переноса в контент-план идея уйдёт из активного списка."
-              : "Идеи, отправленные в контент-план, больше не показываются на этой странице. Попробуйте изменить поиск или фильтры."
+              : "Нет идей на выбранном этапе. Попробуйте изменить поиск или фильтры."
           }
           actionLabel={state.ideas.length === 0 ? "Добавить идею" : undefined}
           onAction={state.ideas.length === 0 ? openAdd : undefined}

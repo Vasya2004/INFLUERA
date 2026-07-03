@@ -137,7 +137,7 @@ export default function OnboardingPage() {
           description: idea.description.trim(),
           format: idea.format,
           priority: idea.priority,
-          status: "превращена в публикацию",
+          status: "сценарий",
           platformId,
           createdAt: new Date().toISOString(),
         }],

@@ -1,24 +1,17 @@
-import type { Idea, Platform, Publication } from "@/lib/types";
-import { IDEA_STATUS_LABELS, getPublicationsForIdea } from "@/lib/ideas-utils";
+import type { Idea, Platform, Publication, Priority } from "@/lib/types";
+import { IDEA_STATUS_LABELS, getPublicationsForIdea, migrateIdeaStatus } from "@/lib/ideas-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { PlatformAvatar } from "@/components/app/platform-avatar";
+import { ideaStatusBadgeClass } from "@/components/ideas/idea-status-path";
+import { PRIORITY_META, formatTagLabel } from "@/components/ideas/ideas-filters";
 
-const statusColors: Record<Idea["status"], string> = {
-  "новая": "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300",
-  "в работе": "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300",
-  "превращена в публикацию": "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300",
-  "отложена": "bg-slate-500/10 text-slate-600 border-slate-500/20 dark:text-slate-300",
-  "архив": "bg-muted text-muted-foreground border-border",
-};
-
-const priorityColors: Record<Idea["priority"], string> = {
-  "высокий": "bg-red-500/10 text-red-700 border-red-500/20 dark:text-red-300",
-  "средний": "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300",
-  "низкий": "bg-slate-500/10 text-slate-600 border-slate-500/20 dark:text-slate-300",
+const priorityColors: Record<Priority, string> = {
+  "высокий": PRIORITY_META.высокий.active,
+  "средний": PRIORITY_META.средний.active,
+  "низкий": PRIORITY_META.низкий.active,
 };
 
 type IdeaCardProps = {
@@ -36,6 +29,7 @@ export function IdeaCard({
 }: IdeaCardProps) {
   const linked = getPublicationsForIdea(publications, idea.id);
   const primaryPublication = linked[0];
+  const status = migrateIdeaStatus(idea.status);
 
   return (
     <Link href={`/app/ideas/${idea.id}`} className="block h-full">
@@ -51,39 +45,45 @@ export function IdeaCard({
           )}
 
           {(idea.tags ?? []).length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {(idea.tags ?? []).map(tag => (
-                <Badge key={tag} variant="outline" className="rounded-md px-1.5 py-0 text-[10px] font-normal">
-                  #{tag}
-                </Badge>
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                >
+                  {formatTagLabel(tag)}
+                </span>
               ))}
             </div>
           )}
 
           {linked.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="min-h-8 rounded-xl px-2.5 text-xs font-medium">
+              <span className="inline-flex min-h-8 items-center rounded-md border border-border bg-muted/40 px-2.5 text-xs font-medium text-foreground">
                 <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
                 {linked.length === 1
                   ? `В плане · ${new Date(primaryPublication.date).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}`
                   : `В плане · ${linked.length} публикации`}
-              </Badge>
+              </span>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
-            <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium", statusColors[idea.status])}>
-              {IDEA_STATUS_LABELS[idea.status]}
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+            <span className={cn("inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium", ideaStatusBadgeClass(status))}>
+              {IDEA_STATUS_LABELS[status]}
             </span>
-            <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium", priorityColors[idea.priority])}>
+            <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium", priorityColors[idea.priority])}>
+              <span className={cn("h-1.5 w-1.5 rounded-full", PRIORITY_META[idea.priority].dot)} />
               {idea.priority}
             </span>
-            <Badge variant="outline" className="text-xs font-normal">{idea.format}</Badge>
+            <span className="inline-flex items-center rounded-md border border-border bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground">
+              {idea.format}
+            </span>
             {platform && (
-              <Badge variant="secondary" className="gap-1.5 text-xs font-normal">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground">
                 <PlatformAvatar platform={platform} size="xs" />
                 {platform.name}
-              </Badge>
+              </span>
             )}
           </div>
         </CardContent>
